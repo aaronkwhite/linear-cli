@@ -1,0 +1,32 @@
+[package]
+name = "lin-cli"
+version = "2026.4.0"
+edition = "2021"
+description = "Linear CLI — manage issues, projects, cycles, and more from the terminal"
+license = "MIT"
+
+[[bin]]
+name = "lin"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+cynic = "3"
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+anyhow = "1"
+comfy-table = "7"
+console = "0.15"
+dialoguer = { version = "0.11", features = ["fuzzy-select"] }
+termimad = "0.30"
+dotenvy = "0.15"
+dashmap = "6"
+
+[dev-dependencies]
+assert_cmd = "2"
+predicates = "3"
+wiremock = "0.6"
+temp-env = "0.3"
