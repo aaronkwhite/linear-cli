@@ -344,6 +344,13 @@ pub async fn execute(args: &RoadmapArgs, json: bool, debug: bool) -> anyhow::Res
         }
 
         RoadmapCommand::DeleteMilestone { milestone_id } => {
+            if crate::output::interactive::is_interactive() {
+                if !crate::output::interactive::confirm(&format!("Delete milestone {}?", milestone_id))? {
+                    println!("Cancelled.");
+                    return Ok(());
+                }
+            }
+
             let query = r#"
                 mutation($id: String!) {
                     projectMilestoneDelete(id: $id) {

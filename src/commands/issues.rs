@@ -201,7 +201,18 @@ pub async fn execute(
 
             let mut filter = json!({});
 
-            if let Some(team_key) = team {
+            let team_key = match team {
+                Some(t) => Some(t.clone()),
+                None if crate::output::interactive::is_interactive() => {
+                    let teams = client.get_teams().await?;
+                    let items: Vec<String> = teams.iter().map(|t| format!("{} ({})", t.name, t.key)).collect();
+                    let idx = crate::output::interactive::fuzzy_select("Select team", &items)?;
+                    Some(teams[idx].key.clone())
+                }
+                None => None,
+            };
+
+            if let Some(team_key) = &team_key {
                 let team_id = client.get_team_id(team_key).await?;
                 filter["team"] = json!({ "id": { "eq": team_id } });
             }
@@ -519,6 +530,13 @@ pub async fn execute(
         }
 
         IssuesCommand::Archive { identifier } => {
+            if crate::output::interactive::is_interactive() {
+                if !crate::output::interactive::confirm(&format!("Archive issue {}?", identifier))? {
+                    println!("Cancelled.");
+                    return Ok(());
+                }
+            }
+
             let query = r#"
                 mutation($id: String!) {
                     issueArchive(id: $id) {

@@ -386,6 +386,13 @@ pub async fn execute(args: &DocsArgs, json: bool, debug: bool) -> anyhow::Result
         }
 
         DocsCommand::Delete { doc_id } => {
+            if crate::output::interactive::is_interactive() {
+                if !crate::output::interactive::confirm(&format!("Delete document {}?", doc_id))? {
+                    println!("Cancelled.");
+                    return Ok(());
+                }
+            }
+
             let query = r#"
                 mutation($id: String!) {
                     documentDelete(id: $id) {

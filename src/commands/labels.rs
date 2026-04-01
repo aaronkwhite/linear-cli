@@ -88,7 +88,18 @@ pub async fn execute(args: &LabelsArgs, json: bool, debug: bool) -> anyhow::Resu
 
     match &args.command {
         LabelsCommand::List { team } => {
-            let (query, variables) = if let Some(team_key) = team {
+            let resolved_team = match team {
+                Some(t) => Some(t.clone()),
+                None if crate::output::interactive::is_interactive() => {
+                    let teams = client.get_teams().await?;
+                    let items: Vec<String> = teams.iter().map(|t| format!("{} ({})", t.name, t.key)).collect();
+                    let idx = crate::output::interactive::fuzzy_select("Select team", &items)?;
+                    Some(teams[idx].key.clone())
+                }
+                None => None,
+            };
+
+            let (query, variables) = if let Some(team_key) = &resolved_team {
                 let team_id = client.get_team_id(team_key).await?;
                 (
                     r#"
@@ -270,6 +281,13 @@ pub async fn execute(args: &LabelsArgs, json: bool, debug: bool) -> anyhow::Resu
         }
 
         LabelsCommand::Delete { name, team } => {
+            if crate::output::interactive::is_interactive() {
+                if !crate::output::interactive::confirm(&format!("Delete label {}?", name))? {
+                    println!("Cancelled.");
+                    return Ok(());
+                }
+            }
+
             let label_ids = client
                 .get_label_ids(&[name.as_str()], team.as_deref())
                 .await?;

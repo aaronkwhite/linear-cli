@@ -92,6 +92,17 @@ pub async fn execute(args: &ViewsArgs, json: bool, debug: bool) -> anyhow::Resul
 
     match &args.command {
         ViewsCommand::List { team, limit } => {
+            let resolved_team = match team {
+                Some(t) => Some(t.clone()),
+                None if crate::output::interactive::is_interactive() => {
+                    let teams = client.get_teams().await?;
+                    let items: Vec<String> = teams.iter().map(|t| format!("{} ({})", t.name, t.key)).collect();
+                    let idx = crate::output::interactive::fuzzy_select("Select team", &items)?;
+                    Some(teams[idx].key.clone())
+                }
+                None => None,
+            };
+
             let query = r#"
                 query($first: Int!) {
                     customViews(first: $first) {
@@ -114,7 +125,7 @@ pub async fn execute(args: &ViewsArgs, json: bool, debug: bool) -> anyhow::Resul
                     .and_then(|v| v.as_array());
                 match nodes {
                     Some(views) if !views.is_empty() => {
-                        let filtered: Vec<&serde_json::Value> = if let Some(team_key) = team {
+                        let filtered: Vec<&serde_json::Value> = if let Some(team_key) = &resolved_team {
                             views
                                 .iter()
                                 .filter(|v| {
@@ -369,6 +380,13 @@ pub async fn execute(args: &ViewsArgs, json: bool, debug: bool) -> anyhow::Resul
         }
 
         ViewsCommand::Delete { view_id } => {
+            if crate::output::interactive::is_interactive() {
+                if !crate::output::interactive::confirm(&format!("Delete view {}?", view_id))? {
+                    println!("Cancelled.");
+                    return Ok(());
+                }
+            }
+
             let query = r#"
                 mutation($id: String!) {
                     customViewDelete(id: $id) {
