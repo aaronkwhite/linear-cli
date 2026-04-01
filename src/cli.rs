@@ -23,4 +23,24 @@ pub struct Cli {
 pub enum Commands {
     /// Manage issues
     Issues(crate::commands::issues::IssuesArgs),
+    /// Manage projects
+    Projects(crate::commands::projects::ProjectsArgs),
+    /// Manage cycles
+    Cycles(crate::commands::cycles::CyclesArgs),
+    /// Roadmap: updates, milestones, initiatives
+    Roadmap(crate::commands::roadmap::RoadmapArgs),
+    /// Manage labels
+    Labels(crate::commands::labels::LabelsArgs),
+    /// Manage teams
+    Teams(crate::commands::teams::TeamsArgs),
+    /// Manage issue relations
+    Relations(crate::commands::relations::RelationsArgs),
+    /// Manage customers
+    Customers(crate::commands::customers::CustomersArgs),
+    /// Manage custom views
+    Views(crate::commands::views::ViewsArgs),
+    /// Manage documents
+    Docs(crate::commands::docs::DocsArgs),
+    /// Manage notifications
+    Notifications(crate::commands::notifications::NotificationsArgs),
 }

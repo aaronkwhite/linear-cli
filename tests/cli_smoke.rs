@@ -101,3 +101,205 @@ fn test_debug_flag_accepted() {
         .assert()
         .success();
 }
+
+// --- Projects ---
+
+#[test]
+fn test_projects_help() {
+    lin()
+        .args(["projects", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("get"))
+        .stdout(predicate::str::contains("list"))
+        .stdout(predicate::str::contains("issues"))
+        .stdout(predicate::str::contains("create"))
+        .stdout(predicate::str::contains("update"));
+}
+
+#[test]
+fn test_projects_list_help() {
+    lin()
+        .args(["projects", "list", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--status"))
+        .stdout(predicate::str::contains("--team"))
+        .stdout(predicate::str::contains("--limit"));
+}
+
+// --- Cycles ---
+
+#[test]
+fn test_cycles_help() {
+    lin()
+        .args(["cycles", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("list"))
+        .stdout(predicate::str::contains("get"))
+        .stdout(predicate::str::contains("issues"))
+        .stdout(predicate::str::contains("create"))
+        .stdout(predicate::str::contains("update"))
+        .stdout(predicate::str::contains("add"))
+        .stdout(predicate::str::contains("remove"));
+}
+
+#[test]
+fn test_cycles_list_help() {
+    lin()
+        .args(["cycles", "list", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--team"))
+        .stdout(predicate::str::contains("--type"));
+}
+
+// --- Roadmap ---
+
+#[test]
+fn test_roadmap_help() {
+    lin()
+        .args(["roadmap", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("updates"))
+        .stdout(predicate::str::contains("post"))
+        .stdout(predicate::str::contains("milestones"))
+        .stdout(predicate::str::contains("create-milestone"))
+        .stdout(predicate::str::contains("update-milestone"))
+        .stdout(predicate::str::contains("delete-milestone"))
+        .stdout(predicate::str::contains("initiatives"));
+}
+
+// --- Labels ---
+
+#[test]
+fn test_labels_help() {
+    lin()
+        .args(["labels", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("list"))
+        .stdout(predicate::str::contains("create"))
+        .stdout(predicate::str::contains("update"))
+        .stdout(predicate::str::contains("delete"))
+        .stdout(predicate::str::contains("apply"))
+        .stdout(predicate::str::contains("remove"))
+        .stdout(predicate::str::contains("usage"));
+}
+
+// --- Teams ---
+
+#[test]
+fn test_teams_help() {
+    lin()
+        .args(["teams", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("list"))
+        .stdout(predicate::str::contains("get"))
+        .stdout(predicate::str::contains("members"))
+        .stdout(predicate::str::contains("states"))
+        .stdout(predicate::str::contains("workload"));
+}
+
+// --- Relations ---
+
+#[test]
+fn test_relations_help() {
+    lin()
+        .args(["relations", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("list"))
+        .stdout(predicate::str::contains("blocks"))
+        .stdout(predicate::str::contains("blocked-by"))
+        .stdout(predicate::str::contains("relates"))
+        .stdout(predicate::str::contains("duplicate"))
+        .stdout(predicate::str::contains("remove"));
+}
+
+// --- Customers ---
+
+#[test]
+fn test_customers_help() {
+    lin()
+        .args(["customers", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("list"))
+        .stdout(predicate::str::contains("create"))
+        .stdout(predicate::str::contains("update"))
+        .stdout(predicate::str::contains("delete"))
+        .stdout(predicate::str::contains("link"))
+        .stdout(predicate::str::contains("needs"))
+        .stdout(predicate::str::contains("tiers"))
+        .stdout(predicate::str::contains("create-tier"));
+}
+
+// --- Views ---
+
+#[test]
+fn test_views_help() {
+    lin()
+        .args(["views", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("list"))
+        .stdout(predicate::str::contains("get"))
+        .stdout(predicate::str::contains("create"))
+        .stdout(predicate::str::contains("update"))
+        .stdout(predicate::str::contains("delete"))
+        .stdout(predicate::str::contains("issues"));
+}
+
+// --- Docs ---
+
+#[test]
+fn test_docs_help() {
+    lin()
+        .args(["docs", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("list"))
+        .stdout(predicate::str::contains("get"))
+        .stdout(predicate::str::contains("search"))
+        .stdout(predicate::str::contains("create"))
+        .stdout(predicate::str::contains("update"))
+        .stdout(predicate::str::contains("delete"));
+}
+
+// --- Notifications ---
+
+#[test]
+fn test_notifications_help() {
+    lin()
+        .args(["notifications", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("list"))
+        .stdout(predicate::str::contains("read"))
+        .stdout(predicate::str::contains("archive"));
+}
+
+// --- Top-level help lists all commands ---
+
+#[test]
+fn test_help_lists_all_commands() {
+    lin()
+        .arg("--help")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("issues"))
+        .stdout(predicate::str::contains("projects"))
+        .stdout(predicate::str::contains("cycles"))
+        .stdout(predicate::str::contains("roadmap"))
+        .stdout(predicate::str::contains("labels"))
+        .stdout(predicate::str::contains("teams"))
+        .stdout(predicate::str::contains("relations"))
+        .stdout(predicate::str::contains("customers"))
+        .stdout(predicate::str::contains("views"))
+        .stdout(predicate::str::contains("docs"))
+        .stdout(predicate::str::contains("notifications"));
+}

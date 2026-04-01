@@ -14,6 +14,16 @@ async fn main() {
 
     let result = match &cli.command {
         Commands::Issues(args) => commands::issues::execute(args, cli.json, cli.debug).await,
+        Commands::Projects(args) => commands::projects::execute(args, cli.json, cli.debug).await,
+        Commands::Cycles(args) => commands::cycles::execute(args, cli.json, cli.debug).await,
+        Commands::Roadmap(args) => commands::roadmap::execute(args, cli.json, cli.debug).await,
+        Commands::Labels(args) => commands::labels::execute(args, cli.json, cli.debug).await,
+        Commands::Teams(args) => commands::teams::execute(args, cli.json, cli.debug).await,
+        Commands::Relations(args) => commands::relations::execute(args, cli.json, cli.debug).await,
+        Commands::Customers(args) => commands::customers::execute(args, cli.json, cli.debug).await,
+        Commands::Views(args) => commands::views::execute(args, cli.json, cli.debug).await,
+        Commands::Docs(args) => commands::docs::execute(args, cli.json, cli.debug).await,
+        Commands::Notifications(args) => commands::notifications::execute(args, cli.json, cli.debug).await,
     };
 
     if let Err(e) = result {
