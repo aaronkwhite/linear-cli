@@ -1,4 +1,7 @@
 use clap::{Args, Subcommand};
+use serde_json::json;
+
+use crate::client::LinearClient;
 
 #[derive(Args, Debug)]
 pub struct IssuesArgs {
@@ -129,31 +132,422 @@ pub enum IssuesCommand {
 
 pub async fn execute(
     args: &IssuesArgs,
-    _json: bool,
-    _debug: bool,
+    json: bool,
+    debug: bool,
 ) -> anyhow::Result<()> {
+    let client = LinearClient::new(None, debug)?;
+
     match &args.command {
         IssuesCommand::Get { identifier } => {
-            println!("issues get {identifier} — not yet implemented");
+            let query = r#"
+                query($id: String!) {
+                    issue(id: $id) {
+                        id identifier title description
+                        state { id name }
+                        priority
+                        assignee { id displayName }
+                        team { id key name }
+                        project { id name }
+                        estimate
+                        dueDate
+                        createdAt
+                        updatedAt
+                        labels { nodes { id name } }
+                        parent { id identifier title }
+                        comments(first: 10) {
+                            nodes {
+                                id body createdAt
+                                user { displayName }
+                            }
+                        }
+                    }
+                }
+            "#;
+            let variables = json!({ "id": identifier });
+            let result = client.query_raw(query, Some(variables)).await?;
+
+            if json {
+                crate::output::print_json(&result);
+            } else {
+                let issue = result
+                    .pointer("/data/issue")
+                    .ok_or_else(|| anyhow::anyhow!("Issue not found: {identifier}"))?;
+                crate::output::detail::print_issue_detail(issue);
+            }
         }
-        IssuesCommand::List { .. } => {
-            println!("issues list — not yet implemented");
+
+        IssuesCommand::List {
+            team,
+            status,
+            assignee,
+            priority,
+            label,
+            limit,
+        } => {
+            let query = r#"
+                query($filter: IssueFilter, $first: Int!, $after: String) {
+                    issues(filter: $filter, first: $first, after: $after, orderBy: updatedAt) {
+                        nodes {
+                            id identifier title
+                            state { name }
+                            assignee { displayName }
+                            priority
+                            team { key }
+                        }
+                        pageInfo { hasNextPage endCursor }
+                    }
+                }
+            "#;
+
+            let mut filter = json!({});
+
+            if let Some(team_key) = team {
+                let team_id = client.get_team_id(team_key).await?;
+                filter["team"] = json!({ "id": { "eq": team_id } });
+            }
+            if let Some(status_name) = status {
+                filter["state"] = json!({ "name": { "eqCaseInsensitive": status_name } });
+            }
+            if let Some(assignee_name) = assignee {
+                let user_id = client.get_user_id(assignee_name).await?;
+                filter["assignee"] = json!({ "id": { "eq": user_id } });
+            }
+            if let Some(p) = priority {
+                filter["priority"] = json!({ "eq": p });
+            }
+            if let Some(label_name) = label {
+                filter["labels"] = json!({ "name": { "eqCaseInsensitive": label_name } });
+            }
+
+            let variables = json!({
+                "filter": filter,
+                "first": limit,
+            });
+            let result = client.query_raw(query, Some(variables)).await?;
+
+            if json {
+                crate::output::print_json(&result);
+            } else {
+                let nodes = result
+                    .pointer("/data/issues/nodes")
+                    .and_then(|v| v.as_array());
+                match nodes {
+                    Some(issues) if !issues.is_empty() => {
+                        for issue in issues {
+                            crate::output::detail::print_issue_summary(issue);
+                        }
+                    }
+                    _ => {
+                        println!("  No issues found.");
+                    }
+                }
+            }
         }
-        IssuesCommand::Search { query, .. } => {
-            println!("issues search '{query}' — not yet implemented");
+
+        IssuesCommand::Search { query: term, team, limit } => {
+            let gql = r#"
+                query($term: String!, $first: Int) {
+                    searchIssues(term: $term, first: $first) {
+                        nodes {
+                            id identifier title
+                            state { name }
+                            assignee { displayName }
+                            priority
+                            team { key }
+                        }
+                    }
+                }
+            "#;
+
+            let _ = team; // search API doesn't support team filter directly
+
+            let variables = json!({
+                "term": term,
+                "first": limit,
+            });
+            let result = client.query_raw(gql, Some(variables)).await?;
+
+            if json {
+                crate::output::print_json(&result);
+            } else {
+                let nodes = result
+                    .pointer("/data/searchIssues/nodes")
+                    .and_then(|v| v.as_array());
+                match nodes {
+                    Some(issues) if !issues.is_empty() => {
+                        for issue in issues {
+                            crate::output::detail::print_issue_summary(issue);
+                        }
+                    }
+                    _ => {
+                        println!("  No issues found.");
+                    }
+                }
+            }
         }
-        IssuesCommand::Create { title, team, .. } => {
-            println!("issues create '{title}' in {team} — not yet implemented");
+
+        IssuesCommand::Create {
+            team,
+            title,
+            description,
+            assignee,
+            priority,
+            estimate,
+            due_date,
+            label,
+            parent,
+            project,
+            status,
+        } => {
+            let query = r#"
+                mutation($input: IssueCreateInput!) {
+                    issueCreate(input: $input) {
+                        success
+                        issue {
+                            id identifier title
+                            state { name }
+                            assignee { displayName }
+                            team { key }
+                        }
+                    }
+                }
+            "#;
+
+            let team_id = client.get_team_id(team).await?;
+            let mut input = json!({
+                "teamId": team_id,
+                "title": title,
+            });
+
+            if let Some(desc) = description {
+                input["description"] = json!(desc);
+            }
+            if let Some(assignee_name) = assignee {
+                let user_id = client.get_user_id(assignee_name).await?;
+                input["assigneeId"] = json!(user_id);
+            }
+            if let Some(p) = priority {
+                input["priority"] = json!(p);
+            }
+            if let Some(est) = estimate {
+                input["estimate"] = json!(est);
+            }
+            if let Some(due) = due_date {
+                input["dueDate"] = json!(due);
+            }
+            if let Some(label_name) = label {
+                let label_ids = client.get_label_ids(&[label_name.as_str()], Some(team)).await?;
+                input["labelIds"] = json!(label_ids);
+            }
+            if let Some(parent_id) = parent {
+                input["parentId"] = json!(parent_id);
+            }
+            if let Some(project_name) = project {
+                let project_id = client.get_project_id(project_name).await?;
+                input["projectId"] = json!(project_id);
+            }
+            if let Some(status_name) = status {
+                let state_id = client.get_state_id(team, status_name).await?;
+                input["stateId"] = json!(state_id);
+            }
+
+            let variables = json!({ "input": input });
+            let result = client.query_raw(query, Some(variables)).await?;
+
+            if json {
+                crate::output::print_json(&result);
+            } else {
+                let success = result
+                    .pointer("/data/issueCreate/success")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+                if success {
+                    let issue = result.pointer("/data/issueCreate/issue");
+                    let identifier = issue
+                        .and_then(|i| i.get("identifier"))
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("???");
+                    println!(
+                        "  {} Created issue {}",
+                        crate::output::color::green("OK"),
+                        crate::output::color::bold(identifier),
+                    );
+                } else {
+                    println!("  {} Failed to create issue", crate::output::color::red("ERROR"));
+                }
+            }
         }
-        IssuesCommand::Update { identifier, .. } => {
-            println!("issues update {identifier} — not yet implemented");
+
+        IssuesCommand::Update {
+            identifier,
+            status,
+            assignee,
+            priority,
+            estimate,
+            due_date,
+            parent,
+            project,
+            label,
+            milestone: _,
+        } => {
+            let query = r#"
+                mutation($id: String!, $input: IssueUpdateInput!) {
+                    issueUpdate(id: $id, input: $input) {
+                        success
+                        issue {
+                            id identifier title
+                            state { name }
+                            assignee { displayName }
+                            team { key }
+                        }
+                    }
+                }
+            "#;
+
+            let mut input = json!({});
+
+            // For status resolution we need the issue's team
+            if status.is_some() || label.is_some() {
+                // Fetch the issue to get its team key
+                let get_query = r#"
+                    query($id: String!) {
+                        issue(id: $id) {
+                            team { key }
+                        }
+                    }
+                "#;
+                let get_result = client
+                    .query_raw(get_query, Some(json!({ "id": identifier })))
+                    .await?;
+                let team_key = get_result
+                    .pointer("/data/issue/team/key")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| anyhow::anyhow!("Could not determine team for issue {identifier}"))?;
+
+                if let Some(status_name) = status {
+                    let state_id = client.get_state_id(team_key, status_name).await?;
+                    input["stateId"] = json!(state_id);
+                }
+                if let Some(label_name) = label {
+                    let label_ids = client
+                        .get_label_ids(&[label_name.as_str()], Some(team_key))
+                        .await?;
+                    input["labelIds"] = json!(label_ids);
+                }
+            }
+
+            if let Some(assignee_name) = assignee {
+                let user_id = client.get_user_id(assignee_name).await?;
+                input["assigneeId"] = json!(user_id);
+            }
+            if let Some(p) = priority {
+                input["priority"] = json!(p);
+            }
+            if let Some(est) = estimate {
+                input["estimate"] = json!(est);
+            }
+            if let Some(due) = due_date {
+                input["dueDate"] = json!(due);
+            }
+            if let Some(parent_id) = parent {
+                input["parentId"] = json!(parent_id);
+            }
+            if let Some(project_name) = project {
+                let project_id = client.get_project_id(project_name).await?;
+                input["projectId"] = json!(project_id);
+            }
+
+            let variables = json!({
+                "id": identifier,
+                "input": input,
+            });
+            let result = client.query_raw(query, Some(variables)).await?;
+
+            if json {
+                crate::output::print_json(&result);
+            } else {
+                let success = result
+                    .pointer("/data/issueUpdate/success")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+                if success {
+                    println!(
+                        "  {} Updated issue {}",
+                        crate::output::color::green("OK"),
+                        crate::output::color::bold(identifier),
+                    );
+                } else {
+                    println!("  {} Failed to update issue", crate::output::color::red("ERROR"));
+                }
+            }
         }
-        IssuesCommand::Comment { identifier, .. } => {
-            println!("issues comment {identifier} — not yet implemented");
+
+        IssuesCommand::Comment { identifier, body } => {
+            let query = r#"
+                mutation($input: CommentCreateInput!) {
+                    commentCreate(input: $input) {
+                        success
+                        comment { id body }
+                    }
+                }
+            "#;
+            let variables = json!({
+                "input": {
+                    "issueId": identifier,
+                    "body": body,
+                }
+            });
+            let result = client.query_raw(query, Some(variables)).await?;
+
+            if json {
+                crate::output::print_json(&result);
+            } else {
+                let success = result
+                    .pointer("/data/commentCreate/success")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+                if success {
+                    println!(
+                        "  {} Added comment to {}",
+                        crate::output::color::green("OK"),
+                        crate::output::color::bold(identifier),
+                    );
+                } else {
+                    println!("  {} Failed to add comment", crate::output::color::red("ERROR"));
+                }
+            }
         }
+
         IssuesCommand::Archive { identifier } => {
-            println!("issues archive {identifier} — not yet implemented");
+            let query = r#"
+                mutation($id: String!) {
+                    issueArchive(id: $id) {
+                        success
+                    }
+                }
+            "#;
+            let variables = json!({ "id": identifier });
+            let result = client.query_raw(query, Some(variables)).await?;
+
+            if json {
+                crate::output::print_json(&result);
+            } else {
+                let success = result
+                    .pointer("/data/issueArchive/success")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+                if success {
+                    println!(
+                        "  {} Archived issue {}",
+                        crate::output::color::green("OK"),
+                        crate::output::color::bold(identifier),
+                    );
+                } else {
+                    println!("  {} Failed to archive issue", crate::output::color::red("ERROR"));
+                }
+            }
         }
     }
+
     Ok(())
 }
