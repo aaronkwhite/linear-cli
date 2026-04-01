@@ -1,3 +1,6 @@
 /target
 .env
 .env.local
+node_modules/
+schema_introspection.json
+schema.graphql

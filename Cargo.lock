@@ -1150,6 +1150,7 @@ dependencies = [
  "comfy-table",
  "console",
  "cynic",
+ "cynic-codegen",
  "dashmap",
  "dialoguer",
  "dotenvy",
