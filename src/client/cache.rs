@@ -16,7 +16,9 @@ pub struct CachedUser {
     pub id: String,
     pub name: Option<String>,
     pub display_name: Option<String>,
+    #[allow(dead_code)]
     pub email: Option<String>,
+    #[allow(dead_code)]
     pub active: bool,
 }
 
@@ -31,6 +33,7 @@ pub struct CachedState {
     pub id: String,
     pub name: String,
     #[serde(rename = "type")]
+    #[allow(dead_code)]
     pub state_type: String,
 }
 
@@ -66,7 +69,10 @@ impl Default for Cache {
     }
 }
 
-pub fn find_team<'a>(teams: &'a [CachedTeam], key_or_name: &str) -> Result<&'a CachedTeam, LinearError> {
+pub fn find_team<'a>(
+    teams: &'a [CachedTeam],
+    key_or_name: &str,
+) -> Result<&'a CachedTeam, LinearError> {
     let needle = key_or_name.to_lowercase();
     teams
         .iter()
@@ -124,10 +130,7 @@ pub fn find_state<'a>(
         })
 }
 
-pub fn find_labels(
-    labels: &[CachedLabel],
-    names: &[&str],
-) -> Result<Vec<String>, LinearError> {
+pub fn find_labels(labels: &[CachedLabel], names: &[&str]) -> Result<Vec<String>, LinearError> {
     names
         .iter()
         .map(|name| {
@@ -150,8 +153,16 @@ mod tests {
 
     fn test_teams() -> Vec<CachedTeam> {
         vec![
-            CachedTeam { id: "t1".into(), name: "Engineering".into(), key: "ENG".into() },
-            CachedTeam { id: "t2".into(), name: "Design".into(), key: "DES".into() },
+            CachedTeam {
+                id: "t1".into(),
+                name: "Engineering".into(),
+                key: "ENG".into(),
+            },
+            CachedTeam {
+                id: "t2".into(),
+                name: "Design".into(),
+                key: "DES".into(),
+            },
         ]
     }
 
@@ -219,8 +230,14 @@ mod tests {
     #[test]
     fn test_find_labels_all_found() {
         let labels = vec![
-            CachedLabel { id: "l1".into(), name: "bug".into() },
-            CachedLabel { id: "l2".into(), name: "feature".into() },
+            CachedLabel {
+                id: "l1".into(),
+                name: "bug".into(),
+            },
+            CachedLabel {
+                id: "l2".into(),
+                name: "feature".into(),
+            },
         ];
         let ids = find_labels(&labels, &["bug", "feature"]).unwrap();
         assert_eq!(ids, vec!["l1", "l2"]);
@@ -228,7 +245,10 @@ mod tests {
 
     #[test]
     fn test_find_labels_one_missing() {
-        let labels = vec![CachedLabel { id: "l1".into(), name: "bug".into() }];
+        let labels = vec![CachedLabel {
+            id: "l1".into(),
+            name: "bug".into(),
+        }];
         let result = find_labels(&labels, &["bug", "nope"]);
         assert!(result.is_err());
     }

@@ -233,7 +233,11 @@ pub async fn execute(args: &CustomersArgs, json: bool, debug: bool) -> anyhow::R
             }
         }
 
-        CustomersCommand::Update { name, tier, revenue } => {
+        CustomersCommand::Update {
+            name,
+            tier,
+            revenue,
+        } => {
             let customer_id = resolve_customer_id(&client, name).await?;
             let query = r#"
                 mutation($id: String!, $input: CustomerUpdateInput!) {
@@ -298,12 +302,11 @@ pub async fn execute(args: &CustomersArgs, json: bool, debug: bool) -> anyhow::R
         }
 
         CustomersCommand::Delete { name } => {
-            if crate::output::interactive::is_interactive() {
-                if !crate::output::interactive::confirm(&format!("Delete customer {}?", name))? {
+            if crate::output::interactive::is_interactive()
+                && !crate::output::interactive::confirm(&format!("Delete customer {}?", name))? {
                     println!("Cancelled.");
                     return Ok(());
                 }
-            }
 
             let customer_id = resolve_customer_id(&client, name).await?;
             let query = r#"
@@ -501,10 +504,7 @@ pub async fn execute(args: &CustomersArgs, json: bool, debug: bool) -> anyhow::R
                                     ]
                                 })
                                 .collect();
-                            crate::output::table::print_table(
-                                &["Issue", "Need", "Created"],
-                                &rows,
-                            );
+                            crate::output::table::print_table(&["Issue", "Need", "Created"], &rows);
                         }
                         _ => println!("  No needs found for {name_or_identifier}."),
                     }
@@ -549,10 +549,7 @@ pub async fn execute(args: &CustomersArgs, json: bool, debug: bool) -> anyhow::R
                                 ]
                             })
                             .collect();
-                        crate::output::table::print_table(
-                            &["Name", "Color", "Description"],
-                            &rows,
-                        );
+                        crate::output::table::print_table(&["Name", "Color", "Description"], &rows);
                     }
                     _ => println!("  No customer tiers found."),
                 }

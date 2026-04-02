@@ -96,24 +96,15 @@ pub async fn execute(args: &RelationsArgs, json: bool, debug: bool) -> anyhow::R
                     .and_then(|v| v.as_str())
                     .unwrap_or(identifier);
 
-                println!(
-                    "\n  Relations for {}",
-                    crate::output::color::bold(ident)
-                );
+                println!("\n  Relations for {}", crate::output::color::bold(ident));
                 println!();
 
                 let mut found = false;
 
-                if let Some(rels) = issue
-                    .pointer("/relations/nodes")
-                    .and_then(|v| v.as_array())
-                {
+                if let Some(rels) = issue.pointer("/relations/nodes").and_then(|v| v.as_array()) {
                     for rel in rels {
                         found = true;
-                        let rel_type = rel
-                            .get("type")
-                            .and_then(|v| v.as_str())
-                            .unwrap_or("?");
+                        let rel_type = rel.get("type").and_then(|v| v.as_str()).unwrap_or("?");
                         let rel_id = rel.get("id").and_then(|v| v.as_str()).unwrap_or("");
                         let related = rel
                             .pointer("/relatedIssue/identifier")
@@ -139,10 +130,7 @@ pub async fn execute(args: &RelationsArgs, json: bool, debug: bool) -> anyhow::R
                 {
                     for rel in inv {
                         found = true;
-                        let rel_type = rel
-                            .get("type")
-                            .and_then(|v| v.as_str())
-                            .unwrap_or("?");
+                        let rel_type = rel.get("type").and_then(|v| v.as_str()).unwrap_or("?");
                         let rel_id = rel.get("id").and_then(|v| v.as_str()).unwrap_or("");
                         let related = rel
                             .pointer("/issue/identifier")

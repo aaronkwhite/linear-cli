@@ -40,10 +40,7 @@ fn test_issues_help() {
 
 #[test]
 fn test_issues_get_help() {
-    lin()
-        .args(["issues", "get", "--help"])
-        .assert()
-        .success();
+    lin().args(["issues", "get", "--help"]).assert().success();
 }
 
 #[test]
@@ -72,18 +69,12 @@ fn test_issues_create_help() {
 
 #[test]
 fn test_issues_get_missing_arg() {
-    lin()
-        .args(["issues", "get"])
-        .assert()
-        .failure();
+    lin().args(["issues", "get"]).assert().failure();
 }
 
 #[test]
 fn test_unknown_command() {
-    lin()
-        .arg("nonexistent")
-        .assert()
-        .failure();
+    lin().arg("nonexistent").assert().failure();
 }
 
 #[test]

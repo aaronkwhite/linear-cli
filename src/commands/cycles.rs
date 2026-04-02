@@ -115,7 +115,8 @@ pub async fn execute(args: &CyclesArgs, json: bool, debug: bool) -> anyhow::Resu
                             .filter(|c| {
                                 let id = c.get("id").and_then(|v| v.as_str()).unwrap_or("");
                                 let is_active = id == active_id;
-                                let completed = c.get("completedAt").map_or(false, |v| !v.is_null());
+                                let completed =
+                                    c.get("completedAt").is_some_and(|v| !v.is_null());
                                 match r#type.as_str() {
                                     "current" => is_active,
                                     "previous" => completed,
@@ -141,11 +142,10 @@ pub async fn execute(args: &CyclesArgs, json: bool, debug: bool) -> anyhow::Resu
                                                 .map(|n| format!("Cycle {n}"))
                                                 .unwrap_or_else(|| "-".to_string())
                                         });
-                                    let is_active =
-                                        id == active_id;
+                                    let is_active = id == active_id;
                                     let status = if is_active {
                                         "Active".to_string()
-                                    } else if c.get("completedAt").map_or(false, |v| !v.is_null()) {
+                                    } else if c.get("completedAt").is_some_and(|v| !v.is_null()) {
                                         "Completed".to_string()
                                     } else {
                                         "Upcoming".to_string()
@@ -206,14 +206,11 @@ pub async fn execute(args: &CyclesArgs, json: bool, debug: bool) -> anyhow::Resu
                 let name = cycle
                     .get("name")
                     .and_then(|v| v.as_str())
-                    .unwrap_or_else(|| {
+                    .unwrap_or({
                         // fallback handled below
                         "Cycle"
                     });
-                let number = cycle
-                    .get("number")
-                    .and_then(|v| v.as_i64())
-                    .unwrap_or(0);
+                let number = cycle.get("number").and_then(|v| v.as_i64()).unwrap_or(0);
                 let display = if name == "Cycle" {
                     format!("Cycle {number}")
                 } else {
@@ -232,9 +229,7 @@ pub async fn execute(args: &CyclesArgs, json: bool, debug: bool) -> anyhow::Resu
                     crate::output::detail::print_detail("End", &end[..10.min(end.len())], 0);
                 }
 
-                if let Some(issues) =
-                    cycle.pointer("/issues/nodes").and_then(|v| v.as_array())
-                {
+                if let Some(issues) = cycle.pointer("/issues/nodes").and_then(|v| v.as_array()) {
                     if !issues.is_empty() {
                         crate::output::detail::print_section("Issues");
                         for issue in issues {
@@ -322,10 +317,7 @@ pub async fn execute(args: &CyclesArgs, json: bool, debug: bool) -> anyhow::Resu
                     .and_then(|v| v.as_bool())
                     .unwrap_or(false);
                 if success {
-                    println!(
-                        "  {} Created cycle",
-                        crate::output::color::green("OK"),
-                    );
+                    println!("  {} Created cycle", crate::output::color::green("OK"),);
                 } else {
                     println!(
                         "  {} Failed to create cycle",

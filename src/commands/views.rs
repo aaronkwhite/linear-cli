@@ -96,7 +96,10 @@ pub async fn execute(args: &ViewsArgs, json: bool, debug: bool) -> anyhow::Resul
                 Some(t) => Some(t.clone()),
                 None if crate::output::interactive::is_interactive() => {
                     let teams = client.get_teams().await?;
-                    let items: Vec<String> = teams.iter().map(|t| format!("{} ({})", t.name, t.key)).collect();
+                    let items: Vec<String> = teams
+                        .iter()
+                        .map(|t| format!("{} ({})", t.name, t.key))
+                        .collect();
                     let idx = crate::output::interactive::fuzzy_select("Select team", &items)?;
                     Some(teams[idx].key.clone())
                 }
@@ -125,19 +128,20 @@ pub async fn execute(args: &ViewsArgs, json: bool, debug: bool) -> anyhow::Resul
                     .and_then(|v| v.as_array());
                 match nodes {
                     Some(views) if !views.is_empty() => {
-                        let filtered: Vec<&serde_json::Value> = if let Some(team_key) = &resolved_team {
-                            views
-                                .iter()
-                                .filter(|v| {
-                                    v.pointer("/team/key")
-                                        .and_then(|k| k.as_str())
-                                        .map(|k| k.eq_ignore_ascii_case(team_key))
-                                        .unwrap_or(false)
-                                })
-                                .collect()
-                        } else {
-                            views.iter().collect()
-                        };
+                        let filtered: Vec<&serde_json::Value> =
+                            if let Some(team_key) = &resolved_team {
+                                views
+                                    .iter()
+                                    .filter(|v| {
+                                        v.pointer("/team/key")
+                                            .and_then(|k| k.as_str())
+                                            .map(|k| k.eq_ignore_ascii_case(team_key))
+                                            .unwrap_or(false)
+                                    })
+                                    .collect()
+                            } else {
+                                views.iter().collect()
+                            };
 
                         if filtered.is_empty() {
                             println!("  No views found.");
@@ -229,8 +233,9 @@ pub async fn execute(args: &ViewsArgs, json: bool, debug: bool) -> anyhow::Resul
                 if let Some(team_name) = view.pointer("/team/name").and_then(|v| v.as_str()) {
                     crate::output::detail::print_detail("Team", team_name, 0);
                 }
-                if let Some(creator) =
-                    view.pointer("/creator/displayName").and_then(|v| v.as_str())
+                if let Some(creator) = view
+                    .pointer("/creator/displayName")
+                    .and_then(|v| v.as_str())
                 {
                     crate::output::detail::print_detail("Creator", creator, 0);
                 }
@@ -380,12 +385,11 @@ pub async fn execute(args: &ViewsArgs, json: bool, debug: bool) -> anyhow::Resul
         }
 
         ViewsCommand::Delete { view_id } => {
-            if crate::output::interactive::is_interactive() {
-                if !crate::output::interactive::confirm(&format!("Delete view {}?", view_id))? {
+            if crate::output::interactive::is_interactive()
+                && !crate::output::interactive::confirm(&format!("Delete view {}?", view_id))? {
                     println!("Cancelled.");
                     return Ok(());
                 }
-            }
 
             let query = r#"
                 mutation($id: String!) {

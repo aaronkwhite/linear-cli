@@ -133,8 +133,7 @@ pub async fn execute(args: &TeamsArgs, json: bool, debug: bool) -> anyhow::Resul
                         0,
                     );
                 }
-                if let Some(projects) = team.pointer("/projects/nodes").and_then(|v| v.as_array())
-                {
+                if let Some(projects) = team.pointer("/projects/nodes").and_then(|v| v.as_array()) {
                     let names: Vec<&str> = projects
                         .iter()
                         .filter_map(|p| p.get("name").and_then(|v| v.as_str()))
@@ -146,13 +145,14 @@ pub async fn execute(args: &TeamsArgs, json: bool, debug: bool) -> anyhow::Resul
 
                 if let Some(cycle) = team.get("activeCycle") {
                     if !cycle.is_null() {
-                        let cycle_name = cycle
-                            .get("name")
-                            .and_then(|v| v.as_str())
-                            .unwrap_or_else(|| {
-                                // handled below
-                                "Active Cycle"
-                            });
+                        let cycle_name =
+                            cycle
+                                .get("name")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or({
+                                    // handled below
+                                    "Active Cycle"
+                                });
                         let start = cycle
                             .get("startsAt")
                             .and_then(|v| v.as_str())
@@ -206,15 +206,12 @@ pub async fn execute(args: &TeamsArgs, json: bool, debug: bool) -> anyhow::Resul
                                     .and_then(|v| v.as_str())
                                     .unwrap_or("-")
                                     .to_string();
-                                let role = if m
-                                    .get("admin")
-                                    .and_then(|v| v.as_bool())
-                                    .unwrap_or(false)
-                                {
-                                    "Admin".to_string()
-                                } else {
-                                    "Member".to_string()
-                                };
+                                let role =
+                                    if m.get("admin").and_then(|v| v.as_bool()).unwrap_or(false) {
+                                        "Admin".to_string()
+                                    } else {
+                                        "Member".to_string()
+                                    };
                                 let issues = m
                                     .pointer("/assignedIssues/nodes")
                                     .and_then(|v| v.as_array())
@@ -349,10 +346,8 @@ pub async fn execute(args: &TeamsArgs, json: bool, debug: bool) -> anyhow::Resul
                             .iter()
                             .map(|(name, statuses)| {
                                 let total: i32 = statuses.values().sum();
-                                let breakdown: Vec<String> = statuses
-                                    .iter()
-                                    .map(|(s, c)| format!("{s}: {c}"))
-                                    .collect();
+                                let breakdown: Vec<String> =
+                                    statuses.iter().map(|(s, c)| format!("{s}: {c}")).collect();
                                 vec![name.clone(), format!("{total}"), breakdown.join(", ")]
                             })
                             .collect();

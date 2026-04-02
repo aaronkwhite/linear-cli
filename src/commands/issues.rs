@@ -130,11 +130,7 @@ pub enum IssuesCommand {
     },
 }
 
-pub async fn execute(
-    args: &IssuesArgs,
-    json: bool,
-    debug: bool,
-) -> anyhow::Result<()> {
+pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Result<()> {
     let client = LinearClient::new(None, debug)?;
 
     match &args.command {
@@ -205,7 +201,10 @@ pub async fn execute(
                 Some(t) => Some(t.clone()),
                 None if crate::output::interactive::is_interactive() => {
                     let teams = client.get_teams().await?;
-                    let items: Vec<String> = teams.iter().map(|t| format!("{} ({})", t.name, t.key)).collect();
+                    let items: Vec<String> = teams
+                        .iter()
+                        .map(|t| format!("{} ({})", t.name, t.key))
+                        .collect();
                     let idx = crate::output::interactive::fuzzy_select("Select team", &items)?;
                     Some(teams[idx].key.clone())
                 }
@@ -255,7 +254,11 @@ pub async fn execute(
             }
         }
 
-        IssuesCommand::Search { query: term, team, limit } => {
+        IssuesCommand::Search {
+            query: term,
+            team,
+            limit,
+        } => {
             let gql = r#"
                 query($term: String!, $first: Int) {
                     searchIssues(term: $term, first: $first) {
@@ -347,7 +350,9 @@ pub async fn execute(
                 input["dueDate"] = json!(due);
             }
             if let Some(label_name) = label {
-                let label_ids = client.get_label_ids(&[label_name.as_str()], Some(team)).await?;
+                let label_ids = client
+                    .get_label_ids(&[label_name.as_str()], Some(team))
+                    .await?;
                 input["labelIds"] = json!(label_ids);
             }
             if let Some(parent_id) = parent {
@@ -384,7 +389,10 @@ pub async fn execute(
                         crate::output::color::bold(identifier),
                     );
                 } else {
-                    println!("  {} Failed to create issue", crate::output::color::red("ERROR"));
+                    println!(
+                        "  {} Failed to create issue",
+                        crate::output::color::red("ERROR")
+                    );
                 }
             }
         }
@@ -433,7 +441,9 @@ pub async fn execute(
                 let team_key = get_result
                     .pointer("/data/issue/team/key")
                     .and_then(|v| v.as_str())
-                    .ok_or_else(|| anyhow::anyhow!("Could not determine team for issue {identifier}"))?;
+                    .ok_or_else(|| {
+                        anyhow::anyhow!("Could not determine team for issue {identifier}")
+                    })?;
 
                 if let Some(status_name) = status {
                     let state_id = client.get_state_id(team_key, status_name).await?;
@@ -488,7 +498,10 @@ pub async fn execute(
                         crate::output::color::bold(identifier),
                     );
                 } else {
-                    println!("  {} Failed to update issue", crate::output::color::red("ERROR"));
+                    println!(
+                        "  {} Failed to update issue",
+                        crate::output::color::red("ERROR")
+                    );
                 }
             }
         }
@@ -524,18 +537,21 @@ pub async fn execute(
                         crate::output::color::bold(identifier),
                     );
                 } else {
-                    println!("  {} Failed to add comment", crate::output::color::red("ERROR"));
+                    println!(
+                        "  {} Failed to add comment",
+                        crate::output::color::red("ERROR")
+                    );
                 }
             }
         }
 
         IssuesCommand::Archive { identifier } => {
-            if crate::output::interactive::is_interactive() {
-                if !crate::output::interactive::confirm(&format!("Archive issue {}?", identifier))? {
+            if crate::output::interactive::is_interactive()
+                && !crate::output::interactive::confirm(&format!("Archive issue {}?", identifier))?
+                {
                     println!("Cancelled.");
                     return Ok(());
                 }
-            }
 
             let query = r#"
                 mutation($id: String!) {
@@ -561,7 +577,10 @@ pub async fn execute(
                         crate::output::color::bold(identifier),
                     );
                 } else {
-                    println!("  {} Failed to archive issue", crate::output::color::red("ERROR"));
+                    println!(
+                        "  {} Failed to archive issue",
+                        crate::output::color::red("ERROR")
+                    );
                 }
             }
         }

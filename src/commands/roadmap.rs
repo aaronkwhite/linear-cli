@@ -104,10 +104,8 @@ pub async fn execute(args: &RoadmapArgs, json: bool, debug: bool) -> anyhow::Res
                 match nodes {
                     Some(updates) if !updates.is_empty() => {
                         for update in updates {
-                            let health = update
-                                .get("health")
-                                .and_then(|v| v.as_str())
-                                .unwrap_or("?");
+                            let health =
+                                update.get("health").and_then(|v| v.as_str()).unwrap_or("?");
                             let user = update
                                 .pointer("/user/displayName")
                                 .and_then(|v| v.as_str())
@@ -116,10 +114,7 @@ pub async fn execute(args: &RoadmapArgs, json: bool, debug: bool) -> anyhow::Res
                                 .get("createdAt")
                                 .and_then(|v| v.as_str())
                                 .unwrap_or("");
-                            let body = update
-                                .get("body")
-                                .and_then(|v| v.as_str())
-                                .unwrap_or("");
+                            let body = update.get("body").and_then(|v| v.as_str()).unwrap_or("");
 
                             println!(
                                 "  {} {} {}",
@@ -344,12 +339,14 @@ pub async fn execute(args: &RoadmapArgs, json: bool, debug: bool) -> anyhow::Res
         }
 
         RoadmapCommand::DeleteMilestone { milestone_id } => {
-            if crate::output::interactive::is_interactive() {
-                if !crate::output::interactive::confirm(&format!("Delete milestone {}?", milestone_id))? {
+            if crate::output::interactive::is_interactive()
+                && !crate::output::interactive::confirm(&format!(
+                    "Delete milestone {}?",
+                    milestone_id
+                ))? {
                     println!("Cancelled.");
                     return Ok(());
                 }
-            }
 
             let query = r#"
                 mutation($id: String!) {

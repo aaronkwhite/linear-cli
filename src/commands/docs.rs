@@ -182,8 +182,7 @@ pub async fn execute(args: &DocsArgs, json: bool, debug: bool) -> anyhow::Result
                 if let Some(proj) = doc.pointer("/project/name").and_then(|v| v.as_str()) {
                     crate::output::detail::print_detail("Project", proj, 0);
                 }
-                if let Some(creator) =
-                    doc.pointer("/creator/displayName").and_then(|v| v.as_str())
+                if let Some(creator) = doc.pointer("/creator/displayName").and_then(|v| v.as_str())
                 {
                     crate::output::detail::print_detail("Creator", creator, 0);
                 }
@@ -386,12 +385,11 @@ pub async fn execute(args: &DocsArgs, json: bool, debug: bool) -> anyhow::Result
         }
 
         DocsCommand::Delete { doc_id } => {
-            if crate::output::interactive::is_interactive() {
-                if !crate::output::interactive::confirm(&format!("Delete document {}?", doc_id))? {
+            if crate::output::interactive::is_interactive()
+                && !crate::output::interactive::confirm(&format!("Delete document {}?", doc_id))? {
                     println!("Cancelled.");
                     return Ok(());
                 }
-            }
 
             let query = r#"
                 mutation($id: String!) {

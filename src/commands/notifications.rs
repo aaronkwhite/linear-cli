@@ -86,9 +86,7 @@ pub async fn execute(args: &NotificationsArgs, json: bool, debug: bool) -> anyho
                         let filtered: Vec<&serde_json::Value> = if *unread {
                             notifs
                                 .iter()
-                                .filter(|n| {
-                                    n.get("readAt").map_or(true, |v| v.is_null())
-                                })
+                                .filter(|n| n.get("readAt").is_none_or(|v| v.is_null()))
                                 .collect()
                         } else {
                             notifs.iter().collect()
@@ -100,10 +98,8 @@ pub async fn execute(args: &NotificationsArgs, json: bool, debug: bool) -> anyho
                             let rows: Vec<Vec<String>> = filtered
                                 .iter()
                                 .map(|n| {
-                                    let ntype = n
-                                        .get("type")
-                                        .and_then(|v| v.as_str())
-                                        .unwrap_or("?");
+                                    let ntype =
+                                        n.get("type").and_then(|v| v.as_str()).unwrap_or("?");
                                     let issue_ident = n
                                         .pointer("/issue/identifier")
                                         .and_then(|v| v.as_str())
@@ -117,10 +113,7 @@ pub async fn execute(args: &NotificationsArgs, json: bool, debug: bool) -> anyho
                                         .and_then(|v| v.as_str())
                                         .map(|s| s.chars().take(10).collect())
                                         .unwrap_or_else(|| "-".to_string());
-                                    let read = if n
-                                        .get("readAt")
-                                        .map_or(true, |v| v.is_null())
-                                    {
+                                    let read = if n.get("readAt").is_none_or(|v| v.is_null()) {
                                         "Unread"
                                     } else {
                                         "Read"
@@ -172,7 +165,7 @@ pub async fn execute(args: &NotificationsArgs, json: bool, debug: bool) -> anyho
                 let unread_ids: Vec<&str> = nodes
                     .unwrap_or(&empty)
                     .iter()
-                    .filter(|n| n.get("readAt").map_or(true, |v| v.is_null()))
+                    .filter(|n| n.get("readAt").is_none_or(|v| v.is_null()))
                     .filter_map(|n| n.get("id").and_then(|v| v.as_str()))
                     .collect();
 

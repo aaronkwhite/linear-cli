@@ -159,11 +159,7 @@ pub async fn execute(args: &ProjectsArgs, json: bool, debug: bool) -> anyhow::Re
                 }
 
                 if let Some(issues) = project.pointer("/issues/nodes").and_then(|v| v.as_array()) {
-                    crate::output::detail::print_detail(
-                        "Issues",
-                        &format!("{}", issues.len()),
-                        0,
-                    );
+                    crate::output::detail::print_detail("Issues", &format!("{}", issues.len()), 0);
                 }
 
                 if let Some(updates) = project
@@ -173,10 +169,8 @@ pub async fn execute(args: &ProjectsArgs, json: bool, debug: bool) -> anyhow::Re
                     if !updates.is_empty() {
                         crate::output::detail::print_section("Recent Updates");
                         for update in updates.iter().take(3) {
-                            let health = update
-                                .get("health")
-                                .and_then(|v| v.as_str())
-                                .unwrap_or("?");
+                            let health =
+                                update.get("health").and_then(|v| v.as_str()).unwrap_or("?");
                             let user = update
                                 .pointer("/user/displayName")
                                 .and_then(|v| v.as_str())
@@ -185,10 +179,7 @@ pub async fn execute(args: &ProjectsArgs, json: bool, debug: bool) -> anyhow::Re
                                 .get("createdAt")
                                 .and_then(|v| v.as_str())
                                 .unwrap_or("");
-                            let body = update
-                                .get("body")
-                                .and_then(|v| v.as_str())
-                                .unwrap_or("");
+                            let body = update.get("body").and_then(|v| v.as_str()).unwrap_or("");
                             println!(
                                 "    {} {} {}",
                                 crate::output::detail::format_health(health),

@@ -92,7 +92,10 @@ pub async fn execute(args: &LabelsArgs, json: bool, debug: bool) -> anyhow::Resu
                 Some(t) => Some(t.clone()),
                 None if crate::output::interactive::is_interactive() => {
                     let teams = client.get_teams().await?;
-                    let items: Vec<String> = teams.iter().map(|t| format!("{} ({})", t.name, t.key)).collect();
+                    let items: Vec<String> = teams
+                        .iter()
+                        .map(|t| format!("{} ({})", t.name, t.key))
+                        .collect();
                     let idx = crate::output::interactive::fuzzy_select("Select team", &items)?;
                     Some(teams[idx].key.clone())
                 }
@@ -152,10 +155,7 @@ pub async fn execute(args: &LabelsArgs, json: bool, debug: bool) -> anyhow::Resu
                                 ]
                             })
                             .collect();
-                        crate::output::table::print_table(
-                            &["Name", "Color", "Description"],
-                            &rows,
-                        );
+                        crate::output::table::print_table(&["Name", "Color", "Description"], &rows);
                     }
                     _ => println!("  No labels found."),
                 }
@@ -281,12 +281,11 @@ pub async fn execute(args: &LabelsArgs, json: bool, debug: bool) -> anyhow::Resu
         }
 
         LabelsCommand::Delete { name, team } => {
-            if crate::output::interactive::is_interactive() {
-                if !crate::output::interactive::confirm(&format!("Delete label {}?", name))? {
+            if crate::output::interactive::is_interactive()
+                && !crate::output::interactive::confirm(&format!("Delete label {}?", name))? {
                     println!("Cancelled.");
                     return Ok(());
                 }
-            }
 
             let label_ids = client
                 .get_label_ids(&[name.as_str()], team.as_deref())
@@ -426,14 +425,8 @@ pub async fn execute(args: &LabelsArgs, json: bool, debug: bool) -> anyhow::Resu
                 .pointer("/data/issue")
                 .ok_or_else(|| anyhow::anyhow!("Issue not found: {issue_id}"))?;
 
-            let remove_names: Vec<&str> = label_names
-                .split(',')
-                .map(|s| s.trim())
-                .collect();
-            let remove_lower: Vec<String> = remove_names
-                .iter()
-                .map(|n| n.to_lowercase())
-                .collect();
+            let remove_names: Vec<&str> = label_names.split(',').map(|s| s.trim()).collect();
+            let remove_lower: Vec<String> = remove_names.iter().map(|n| n.to_lowercase()).collect();
 
             let remaining_ids: Vec<String> = issue
                 .pointer("/labels/nodes")

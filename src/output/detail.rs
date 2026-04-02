@@ -1,4 +1,4 @@
-use super::color::{bold, cyan, dim, format_priority, green, red, yellow};
+use super::color::{bold, dim, format_priority, green, red, yellow};
 use serde_json::Value;
 
 pub fn print_detail(label: &str, value: &str, indent: usize) {
@@ -38,10 +38,7 @@ pub fn print_issue_summary(issue: &Value) {
         .and_then(|v| v.as_str())
         .unwrap_or("-");
 
-    let title = issue
-        .get("title")
-        .and_then(|v| v.as_str())
-        .unwrap_or("");
+    let title = issue.get("title").and_then(|v| v.as_str()).unwrap_or("");
 
     let assignee = issue
         .pointer("/assignee/displayName")
@@ -49,10 +46,7 @@ pub fn print_issue_summary(issue: &Value) {
         .map(|name| dim(&format!("@{name}")))
         .unwrap_or_default();
 
-    let priority = issue
-        .get("priority")
-        .and_then(|v| v.as_i64())
-        .unwrap_or(0) as i32;
+    let priority = issue.get("priority").and_then(|v| v.as_i64()).unwrap_or(0) as i32;
 
     println!(
         "  {:<10} {:<14} {}  {} {}",
@@ -78,10 +72,7 @@ pub fn print_issue_detail(issue: &Value) {
         print_detail("Status", state, 0);
     }
 
-    let priority = issue
-        .get("priority")
-        .and_then(|v| v.as_i64())
-        .unwrap_or(0) as i32;
+    let priority = issue.get("priority").and_then(|v| v.as_i64()).unwrap_or(0) as i32;
     if priority > 0 {
         let label = match priority {
             1 => "Urgent",
@@ -90,7 +81,11 @@ pub fn print_issue_detail(issue: &Value) {
             4 => "Low",
             _ => "None",
         };
-        print_detail("Priority", &format!("{} {}", label, format_priority(priority)), 0);
+        print_detail(
+            "Priority",
+            &format!("{} {}", label, format_priority(priority)),
+            0,
+        );
     }
 
     let assignee = format_user(issue.get("assignee"));
@@ -124,7 +119,10 @@ pub fn print_issue_detail(issue: &Value) {
 
     if let Some(parent) = issue.get("parent") {
         if !parent.is_null() {
-            let pid = parent.get("identifier").and_then(|v| v.as_str()).unwrap_or("?");
+            let pid = parent
+                .get("identifier")
+                .and_then(|v| v.as_str())
+                .unwrap_or("?");
             let ptitle = parent.get("title").and_then(|v| v.as_str()).unwrap_or("");
             print_detail("Parent", &format!("{pid} {ptitle}"), 0);
         }
@@ -160,10 +158,7 @@ pub fn print_issue_detail(issue: &Value) {
                     .get("createdAt")
                     .and_then(|v| v.as_str())
                     .unwrap_or("");
-                let body = comment
-                    .get("body")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("");
+                let body = comment.get("body").and_then(|v| v.as_str()).unwrap_or("");
 
                 println!("  {} {}", bold(user), dim(date));
                 for line in body.lines().take(5) {

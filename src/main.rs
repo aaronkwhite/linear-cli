@@ -23,7 +23,9 @@ async fn main() {
         Commands::Customers(args) => commands::customers::execute(args, cli.json, cli.debug).await,
         Commands::Views(args) => commands::views::execute(args, cli.json, cli.debug).await,
         Commands::Docs(args) => commands::docs::execute(args, cli.json, cli.debug).await,
-        Commands::Notifications(args) => commands::notifications::execute(args, cli.json, cli.debug).await,
+        Commands::Notifications(args) => {
+            commands::notifications::execute(args, cli.json, cli.debug).await
+        }
     };
 
     if let Err(e) = result {

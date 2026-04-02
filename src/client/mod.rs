@@ -174,10 +174,9 @@ impl LinearClient {
         if let Some(teams) = self.cache.teams.get() {
             return Ok(teams.clone());
         }
-        let result = self.query_raw(
-            "query { teams { nodes { id name key } } }",
-            None,
-        ).await?;
+        let result = self
+            .query_raw("query { teams { nodes { id name key } } }", None)
+            .await?;
         let nodes = result
             .pointer("/data/teams/nodes")
             .ok_or_else(|| LinearError::GraphQL("No teams data".into()))?;
@@ -195,10 +194,12 @@ impl LinearClient {
         if let Some(users) = self.cache.users.get() {
             return Ok(users.clone());
         }
-        let result = self.query_raw(
-            "query { users(first: 250) { nodes { id name displayName email active } } }",
-            None,
-        ).await?;
+        let result = self
+            .query_raw(
+                "query { users(first: 250) { nodes { id name displayName email active } } }",
+                None,
+            )
+            .await?;
         let nodes = result
             .pointer("/data/users/nodes")
             .ok_or_else(|| LinearError::GraphQL("No users data".into()))?;
@@ -216,10 +217,9 @@ impl LinearClient {
         let projects = if let Some(p) = self.cache.projects.get() {
             p.clone()
         } else {
-            let result = self.query_raw(
-                "query { projects(first: 250) { nodes { id name } } }",
-                None,
-            ).await?;
+            let result = self
+                .query_raw("query { projects(first: 250) { nodes { id name } } }", None)
+                .await?;
             let nodes = result
                 .pointer("/data/projects/nodes")
                 .ok_or_else(|| LinearError::GraphQL("No projects data".into()))?;
@@ -230,7 +230,11 @@ impl LinearClient {
         Ok(cache::find_project(&projects, name)?.id.clone())
     }
 
-    pub async fn get_state_id(&self, team_key: &str, state_name: &str) -> Result<String, LinearError> {
+    pub async fn get_state_id(
+        &self,
+        team_key: &str,
+        state_name: &str,
+    ) -> Result<String, LinearError> {
         if !self.cache.states.contains_key(team_key) {
             let team_id = self.get_team_id(team_key).await?;
             let result = self.query_raw(
@@ -247,7 +251,11 @@ impl LinearClient {
         Ok(cache::find_state(entry.value(), state_name)?.id.clone())
     }
 
-    pub async fn get_label_ids(&self, names: &[&str], team_key: Option<&str>) -> Result<Vec<String>, LinearError> {
+    pub async fn get_label_ids(
+        &self,
+        names: &[&str],
+        team_key: Option<&str>,
+    ) -> Result<Vec<String>, LinearError> {
         let cache_key = team_key.unwrap_or("__workspace__");
         if !self.cache.labels.contains_key(cache_key) {
             let (query, variables) = if let Some(tk) = team_key {
