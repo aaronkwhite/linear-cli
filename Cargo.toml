@@ -4,6 +4,13 @@ version = "2026.4.0"
 edition = "2021"
 description = "Linear CLI — manage issues, projects, cycles, and more from the terminal"
 license = "MIT"
+repository = "https://github.com/aaronkwhite/lin-cli"
+homepage = "https://github.com/aaronkwhite/lin-cli"
+authors = ["Aaron K White"]
+readme = "README.md"
+keywords = ["cli", "linear", "graphql", "issue-tracking"]
+categories = ["command-line-utilities", "development-tools"]
+exclude = ["docs/superpowers/", ".github/"]
 
 [[bin]]
 name = "lin"
