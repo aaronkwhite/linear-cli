@@ -303,10 +303,11 @@ pub async fn execute(args: &CustomersArgs, json: bool, debug: bool) -> anyhow::R
 
         CustomersCommand::Delete { name } => {
             if crate::output::interactive::is_interactive()
-                && !crate::output::interactive::confirm(&format!("Delete customer {}?", name))? {
-                    println!("Cancelled.");
-                    return Ok(());
-                }
+                && !crate::output::interactive::confirm(&format!("Delete customer {}?", name))?
+            {
+                println!("Cancelled.");
+                return Ok(());
+            }
 
             let customer_id = resolve_customer_id(&client, name).await?;
             let query = r#"

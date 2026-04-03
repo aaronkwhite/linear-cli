@@ -145,14 +145,10 @@ pub async fn execute(args: &TeamsArgs, json: bool, debug: bool) -> anyhow::Resul
 
                 if let Some(cycle) = team.get("activeCycle") {
                     if !cycle.is_null() {
-                        let cycle_name =
-                            cycle
-                                .get("name")
-                                .and_then(|v| v.as_str())
-                                .unwrap_or({
-                                    // handled below
-                                    "Active Cycle"
-                                });
+                        let cycle_name = cycle.get("name").and_then(|v| v.as_str()).unwrap_or({
+                            // handled below
+                            "Active Cycle"
+                        });
                         let start = cycle
                             .get("startsAt")
                             .and_then(|v| v.as_str())

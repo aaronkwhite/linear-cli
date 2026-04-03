@@ -115,8 +115,7 @@ pub async fn execute(args: &CyclesArgs, json: bool, debug: bool) -> anyhow::Resu
                             .filter(|c| {
                                 let id = c.get("id").and_then(|v| v.as_str()).unwrap_or("");
                                 let is_active = id == active_id;
-                                let completed =
-                                    c.get("completedAt").is_some_and(|v| !v.is_null());
+                                let completed = c.get("completedAt").is_some_and(|v| !v.is_null());
                                 match r#type.as_str() {
                                     "current" => is_active,
                                     "previous" => completed,
@@ -203,13 +202,10 @@ pub async fn execute(args: &CyclesArgs, json: bool, debug: bool) -> anyhow::Resu
                     .pointer("/data/cycle")
                     .ok_or_else(|| anyhow::anyhow!("Cycle not found: {cycle_id}"))?;
 
-                let name = cycle
-                    .get("name")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or({
-                        // fallback handled below
-                        "Cycle"
-                    });
+                let name = cycle.get("name").and_then(|v| v.as_str()).unwrap_or({
+                    // fallback handled below
+                    "Cycle"
+                });
                 let number = cycle.get("number").and_then(|v| v.as_i64()).unwrap_or(0);
                 let display = if name == "Cycle" {
                     format!("Cycle {number}")

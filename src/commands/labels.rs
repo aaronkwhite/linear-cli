@@ -282,10 +282,11 @@ pub async fn execute(args: &LabelsArgs, json: bool, debug: bool) -> anyhow::Resu
 
         LabelsCommand::Delete { name, team } => {
             if crate::output::interactive::is_interactive()
-                && !crate::output::interactive::confirm(&format!("Delete label {}?", name))? {
-                    println!("Cancelled.");
-                    return Ok(());
-                }
+                && !crate::output::interactive::confirm(&format!("Delete label {}?", name))?
+            {
+                println!("Cancelled.");
+                return Ok(());
+            }
 
             let label_ids = client
                 .get_label_ids(&[name.as_str()], team.as_deref())

@@ -548,10 +548,10 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
         IssuesCommand::Archive { identifier } => {
             if crate::output::interactive::is_interactive()
                 && !crate::output::interactive::confirm(&format!("Archive issue {}?", identifier))?
-                {
-                    println!("Cancelled.");
-                    return Ok(());
-                }
+            {
+                println!("Cancelled.");
+                return Ok(());
+            }
 
             let query = r#"
                 mutation($id: String!) {

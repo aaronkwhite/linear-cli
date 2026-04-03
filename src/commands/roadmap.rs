@@ -343,10 +343,11 @@ pub async fn execute(args: &RoadmapArgs, json: bool, debug: bool) -> anyhow::Res
                 && !crate::output::interactive::confirm(&format!(
                     "Delete milestone {}?",
                     milestone_id
-                ))? {
-                    println!("Cancelled.");
-                    return Ok(());
-                }
+                ))?
+            {
+                println!("Cancelled.");
+                return Ok(());
+            }
 
             let query = r#"
                 mutation($id: String!) {

@@ -386,10 +386,11 @@ pub async fn execute(args: &ViewsArgs, json: bool, debug: bool) -> anyhow::Resul
 
         ViewsCommand::Delete { view_id } => {
             if crate::output::interactive::is_interactive()
-                && !crate::output::interactive::confirm(&format!("Delete view {}?", view_id))? {
-                    println!("Cancelled.");
-                    return Ok(());
-                }
+                && !crate::output::interactive::confirm(&format!("Delete view {}?", view_id))?
+            {
+                println!("Cancelled.");
+                return Ok(());
+            }
 
             let query = r#"
                 mutation($id: String!) {
