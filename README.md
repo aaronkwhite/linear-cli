@@ -1,19 +1,36 @@
 # lin — Linear CLI
 
+[![CI](https://github.com/aaronkwhite/lin-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/aaronkwhite/lin-cli/actions/workflows/ci.yml)
+[![Crates.io](https://img.shields.io/crates/v/lin-cli.svg)](https://crates.io/crates/lin-cli)
+[![Downloads](https://img.shields.io/crates/d/lin-cli.svg)](https://crates.io/crates/lin-cli)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 A fast, native CLI for [Linear](https://linear.app). Manage issues, projects, cycles, and more from your terminal.
 
 ## Install
 
-### From source
+### Homebrew (macOS)
 
 ```bash
-cargo install --path .
+brew install aaronkwhite/tap/lin
 ```
 
-### From crates.io
+### Cargo
 
 ```bash
 cargo install lin-cli
+```
+
+### Pre-built Binaries
+
+Download from [GitHub Releases](https://github.com/aaronkwhite/lin-cli/releases) — available for macOS (Intel & Apple Silicon) and Linux (x86 & ARM).
+
+### From Source
+
+```bash
+git clone https://github.com/aaronkwhite/lin-cli.git
+cd lin-cli
+cargo install --path .
 ```
 
 ## Setup
@@ -79,6 +96,10 @@ cargo build                           # Build
 cargo test                            # Run tests (smoke + unit)
 LINEAR_API_KEY=... cargo test -- --ignored  # Run integration tests
 ```
+
+## Contributing
+
+Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 
