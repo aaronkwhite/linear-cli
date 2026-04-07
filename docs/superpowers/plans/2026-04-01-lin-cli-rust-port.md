@@ -70,7 +70,7 @@
 - [ ] **Step 1: Initialize git repo**
 
 ```bash
-cd /Users/wookiedrool/src/lin-cli
+cd .
 git init
 ```
 
@@ -244,7 +244,7 @@ Versioning follows [CalVer](https://calver.org/) with format `YYYY.MM.PATCH`.
 - [ ] **Step 7: Verify it compiles**
 
 ```bash
-cd /Users/wookiedrool/src/lin-cli && cargo build
+cd . && cargo build
 ```
 Expected: successful build.
 
@@ -309,7 +309,7 @@ fn main() {
 - [ ] **Step 3: Verify it compiles**
 
 ```bash
-cd /Users/wookiedrool/src/lin-cli && cargo build
+cd . && cargo build
 ```
 
 - [ ] **Step 4: Commit**
@@ -444,7 +444,7 @@ mod tests {
 - [ ] **Step 2: Run color tests**
 
 ```bash
-cd /Users/wookiedrool/src/lin-cli && cargo test output::color
+cd . && cargo test output::color
 ```
 Expected: all tests pass.
 
@@ -875,7 +875,7 @@ fn main() {
 - [ ] **Step 8: Run all tests**
 
 ```bash
-cd /Users/wookiedrool/src/lin-cli && cargo test
+cd . && cargo test
 ```
 Expected: all output tests pass.
 
@@ -899,7 +899,7 @@ git commit -m "feat: add output module with color, table, detail, and interactiv
 - [ ] **Step 1: Download Linear's GraphQL schema**
 
 ```bash
-cd /Users/wookiedrool/src/lin-cli
+cd .
 # Install cynic-cli if not present
 cargo install cynic-cli 2>/dev/null || true
 # Download schema (requires API key)
@@ -985,7 +985,7 @@ fn main() {
 - [ ] **Step 6: Verify it compiles**
 
 ```bash
-cd /Users/wookiedrool/src/lin-cli && cargo build
+cd . && cargo build
 ```
 Expected: compiles successfully. This validates that cynic can read the schema and generate types.
 
@@ -1339,7 +1339,7 @@ fn main() {
 - [ ] **Step 4: Run tests**
 
 ```bash
-cd /Users/wookiedrool/src/lin-cli && cargo test client::
+cd . && cargo test client::
 ```
 Expected: all 4 auth tests pass.
 
@@ -1607,7 +1607,7 @@ mod tests {
 - [ ] **Step 2: Run cache tests**
 
 ```bash
-cd /Users/wookiedrool/src/lin-cli && cargo test client::cache
+cd . && cargo test client::cache
 ```
 Expected: all 8 cache tests pass.
 
@@ -1870,7 +1870,7 @@ async fn main() {
 - [ ] **Step 5: Verify it compiles and help works**
 
 ```bash
-cd /Users/wookiedrool/src/lin-cli && cargo build && ./target/debug/lin --help
+cd . && cargo build && ./target/debug/lin --help
 ```
 Expected: prints help showing "issues" subcommand.
 
@@ -2005,7 +2005,7 @@ fn test_debug_flag_accepted() {
 - [ ] **Step 2: Run smoke tests**
 
 ```bash
-cd /Users/wookiedrool/src/lin-cli && cargo test --test cli_smoke
+cd . && cargo test --test cli_smoke
 ```
 Expected: all 10 tests pass.
 
@@ -2356,13 +2356,13 @@ pub struct LinearClient {
 - [ ] **Step 4: Verify it compiles**
 
 ```bash
-cd /Users/wookiedrool/src/lin-cli && cargo build
+cd . && cargo build
 ```
 
 - [ ] **Step 5: Run all tests**
 
 ```bash
-cd /Users/wookiedrool/src/lin-cli && cargo test
+cd . && cargo test
 ```
 
 - [ ] **Step 6: Manual smoke test with real API**
@@ -2709,7 +2709,7 @@ fn test_projects_help() {
 - [ ] **Step 5: Run all tests**
 
 ```bash
-cd /Users/wookiedrool/src/lin-cli && cargo test
+cd . && cargo test
 ```
 
 - [ ] **Step 6: Commit**
@@ -3029,7 +3029,7 @@ fn test_cycles_help() {
 - [ ] **Step 6: Run all tests and commit**
 
 ```bash
-cd /Users/wookiedrool/src/lin-cli && cargo test
+cd . && cargo test
 git add -A && git commit -m "feat: implement cycles command group with all 7 subcommands"
 ```
 
@@ -3359,7 +3359,7 @@ if crate::output::interactive::is_interactive() {
 - [ ] **Step 3: Run all tests**
 
 ```bash
-cd /Users/wookiedrool/src/lin-cli && cargo test
+cd . && cargo test
 ```
 
 - [ ] **Step 4: Commit**
@@ -3461,7 +3461,7 @@ fn test_docs_list() {
 - [ ] **Step 2: Run integration tests**
 
 ```bash
-cd /Users/wookiedrool/src/lin-cli && LINEAR_API_KEY="..." cargo test --test integration -- --ignored
+cd . && LINEAR_API_KEY="..." cargo test --test integration -- --ignored
 ```
 Expected: all pass (assuming valid API key with workspace data).
 
@@ -3511,14 +3511,14 @@ SOFTWARE.
 - [ ] **Step 2: Run full test suite**
 
 ```bash
-cd /Users/wookiedrool/src/lin-cli && cargo test
+cd . && cargo test
 ```
 Expected: all smoke + unit tests pass.
 
 - [ ] **Step 3: Build release binary and test size**
 
 ```bash
-cd /Users/wookiedrool/src/lin-cli && cargo build --release && ls -lh target/release/lin
+cd . && cargo build --release && ls -lh target/release/lin
 ```
 
 - [ ] **Step 4: Final commit**
