@@ -103,7 +103,7 @@ pub async fn execute(args: &CustomersArgs, json: bool, debug: bool) -> anyhow::R
                             id name
                             domains
                             revenue
-                            needs { nodes { id } }
+                            needs { id }
                         }
                     }
                 }
@@ -140,7 +140,7 @@ pub async fn execute(args: &CustomersArgs, json: bool, debug: bool) -> anyhow::R
                                     .map(|r| format!("${:.0}", r))
                                     .unwrap_or_else(|| "-".to_string());
                                 let needs = c
-                                    .pointer("/needs/nodes")
+                                    .get("needs")
                                     .and_then(|v| v.as_array())
                                     .map(|a| format!("{}", a.len()))
                                     .unwrap_or_else(|| "0".to_string());

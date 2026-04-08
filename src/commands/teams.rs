@@ -229,7 +229,7 @@ pub async fn execute(args: &TeamsArgs, json: bool, debug: bool) -> anyhow::Resul
         TeamsCommand::States { key } => {
             let team_id = client.get_team_id(key).await?;
             let query = r#"
-                query($teamId: String!) {
+                query($teamId: ID!) {
                     workflowStates(filter: { team: { id: { eq: $teamId } } }) {
                         nodes { id name type position }
                     }
