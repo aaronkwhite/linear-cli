@@ -101,8 +101,7 @@ pub async fn execute(args: &CustomersArgs, json: bool, debug: bool) -> anyhow::R
                     customers(first: $first) {
                         nodes {
                             id name
-                            domains { nodes { name } }
-                            customerStatus { name }
+                            domains
                             revenue
                             needs { nodes { id } }
                         }
@@ -129,12 +128,9 @@ pub async fn execute(args: &CustomersArgs, json: bool, debug: bool) -> anyhow::R
                                     .unwrap_or("-")
                                     .to_string();
                                 let domain = c
-                                    .pointer("/domains/nodes/0/name")
-                                    .and_then(|v| v.as_str())
-                                    .unwrap_or("-")
-                                    .to_string();
-                                let tier = c
-                                    .pointer("/customerStatus/name")
+                                    .get("domains")
+                                    .and_then(|v| v.as_array())
+                                    .and_then(|a| a.first())
                                     .and_then(|v| v.as_str())
                                     .unwrap_or("-")
                                     .to_string();
@@ -148,11 +144,11 @@ pub async fn execute(args: &CustomersArgs, json: bool, debug: bool) -> anyhow::R
                                     .and_then(|v| v.as_array())
                                     .map(|a| format!("{}", a.len()))
                                     .unwrap_or_else(|| "0".to_string());
-                                vec![name, domain, tier, revenue, needs]
+                                vec![name, domain, revenue, needs]
                             })
                             .collect();
                         crate::output::table::print_table(
-                            &["Name", "Domain", "Tier", "Revenue", "Needs"],
+                            &["Name", "Domain", "Revenue", "Needs"],
                             &rows,
                         );
                     }
@@ -407,7 +403,7 @@ pub async fn execute(args: &CustomersArgs, json: bool, debug: bool) -> anyhow::R
                     query($id: String!) {
                         issue(id: $id) {
                             identifier title
-                            customerNeeds {
+                            needs {
                                 nodes {
                                     id body createdAt
                                     customer { name }
@@ -423,7 +419,7 @@ pub async fn execute(args: &CustomersArgs, json: bool, debug: bool) -> anyhow::R
                     crate::output::print_json(&result);
                 } else {
                     let nodes = result
-                        .pointer("/data/issue/customerNeeds/nodes")
+                        .pointer("/data/issue/needs/nodes")
                         .and_then(|v| v.as_array());
                     match nodes {
                         Some(needs) if !needs.is_empty() => {
