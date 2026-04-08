@@ -1,12 +1,15 @@
+pub mod attachments;
 pub mod customers;
 pub mod cycles;
 pub mod docs;
 pub mod initiatives;
 pub mod issues;
 pub mod labels;
+pub mod me;
 pub mod notifications;
 pub mod projects;
 pub mod relations;
 pub mod roadmap;
+pub mod search;
 pub mod teams;
 pub mod views;

@@ -29,6 +29,11 @@ async fn main() {
         Commands::Notifications(args) => {
             commands::notifications::execute(args, cli.json, cli.debug).await
         }
+        Commands::Me(args) => commands::me::execute(args, cli.json, cli.debug).await,
+        Commands::Attachments(args) => {
+            commands::attachments::execute(args, cli.json, cli.debug).await
+        }
+        Commands::Search(args) => commands::search::execute(args, cli.json, cli.debug).await,
     };
 
     if let Err(e) = result {

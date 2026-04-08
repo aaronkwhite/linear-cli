@@ -45,4 +45,10 @@ pub enum Commands {
     Docs(crate::commands::docs::DocsArgs),
     /// Manage notifications
     Notifications(crate::commands::notifications::NotificationsArgs),
+    /// Show authenticated user info
+    Me(crate::commands::me::MeArgs),
+    /// Manage issue attachments and links
+    Attachments(crate::commands::attachments::AttachmentsArgs),
+    /// Search across issues, projects, and documents
+    Search(crate::commands::search::SearchArgs),
 }

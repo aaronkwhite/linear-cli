@@ -133,7 +133,8 @@ fn test_cycles_help() {
         .stdout(predicate::str::contains("create"))
         .stdout(predicate::str::contains("update"))
         .stdout(predicate::str::contains("add"))
-        .stdout(predicate::str::contains("remove"));
+        .stdout(predicate::str::contains("remove"))
+        .stdout(predicate::str::contains("archive"));
 }
 
 #[test]
@@ -277,6 +278,13 @@ fn test_docs_help() {
         .stdout(predicate::str::contains("delete"));
 }
 
+// --- Me ---
+
+#[test]
+fn test_me_help() {
+    lin().args(["me", "--help"]).assert().success();
+}
+
 // --- Notifications ---
 
 #[test]
@@ -287,7 +295,39 @@ fn test_notifications_help() {
         .success()
         .stdout(predicate::str::contains("list"))
         .stdout(predicate::str::contains("read"))
-        .stdout(predicate::str::contains("archive"));
+        .stdout(predicate::str::contains("archive"))
+        .stdout(predicate::str::contains("snooze"))
+        .stdout(predicate::str::contains("unsnooze"));
+}
+
+// --- Attachments ---
+
+#[test]
+fn test_attachments_help() {
+    lin()
+        .args(["attachments", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("list"))
+        .stdout(predicate::str::contains("create"))
+        .stdout(predicate::str::contains("link-url"))
+        .stdout(predicate::str::contains("delete"));
+}
+
+// --- Search ---
+
+#[test]
+fn test_search_help() {
+    lin()
+        .args(["search", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--limit"));
+}
+
+#[test]
+fn test_search_missing_arg() {
+    lin().args(["search"]).assert().failure();
 }
 
 // --- Top-level help lists all commands ---
@@ -309,5 +349,8 @@ fn test_help_lists_all_commands() {
         .stdout(predicate::str::contains("customers"))
         .stdout(predicate::str::contains("views"))
         .stdout(predicate::str::contains("docs"))
-        .stdout(predicate::str::contains("notifications"));
+        .stdout(predicate::str::contains("notifications"))
+        .stdout(predicate::str::contains("me"))
+        .stdout(predicate::str::contains("attachments"))
+        .stdout(predicate::str::contains("search"));
 }
