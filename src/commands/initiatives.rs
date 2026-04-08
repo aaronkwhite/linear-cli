@@ -87,6 +87,38 @@ pub enum InitiativesCommand {
         #[arg(long, default_value = "50")]
         limit: i32,
     },
+    /// List status updates for an initiative
+    Updates {
+        /// Initiative name or ID
+        name_or_id: String,
+        /// Max results
+        #[arg(long, default_value = "10")]
+        limit: usize,
+    },
+    /// Post a status update to an initiative
+    PostUpdate {
+        /// Initiative name or ID
+        name_or_id: String,
+        /// Update body text
+        body: String,
+        /// Health status (onTrack, atRisk, offTrack)
+        #[arg(long, default_value = "onTrack")]
+        health: String,
+    },
+    /// Link a project to an initiative
+    AddProject {
+        /// Initiative name or ID
+        initiative_name_or_id: String,
+        /// Project name
+        project_name: String,
+    },
+    /// Unlink a project from an initiative
+    RemoveProject {
+        /// Initiative name or ID
+        initiative_name_or_id: String,
+        /// Project name
+        project_name: String,
+    },
 }
 
 async fn resolve_initiative_id(client: &LinearClient, name_or_id: &str) -> anyhow::Result<String> {
@@ -548,6 +580,225 @@ pub async fn execute(args: &InitiativesArgs, json: bool, debug: bool) -> anyhow:
                 } else {
                     println!(
                         "  {} Failed to delete initiative",
+                        crate::output::color::red("ERROR")
+                    );
+                }
+            }
+        }
+
+        InitiativesCommand::Updates { name_or_id, limit } => {
+            let id = resolve_initiative_id(&client, name_or_id).await?;
+            let query = r#"
+                query($id: String!) {
+                    initiative(id: $id) {
+                        updates(first: 50) {
+                            nodes {
+                                id body health createdAt
+                                user { displayName }
+                            }
+                        }
+                    }
+                }
+            "#;
+            let variables = json!({ "id": id });
+            let result = client.query_raw(query, Some(variables)).await?;
+
+            if json {
+                crate::output::print_json(&result);
+            } else {
+                let nodes = result
+                    .pointer("/data/initiative/updates/nodes")
+                    .and_then(|v| v.as_array());
+                match nodes {
+                    Some(updates) if !updates.is_empty() => {
+                        let display: Vec<&serde_json::Value> =
+                            updates.iter().take(*limit).collect();
+                        for update in display {
+                            let health =
+                                update.get("health").and_then(|v| v.as_str()).unwrap_or("-");
+                            let date = update
+                                .get("createdAt")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("-");
+                            let user = crate::output::detail::format_user(update.get("user"));
+                            let body = update.get("body").and_then(|v| v.as_str()).unwrap_or("");
+                            let preview: String = body.chars().take(120).collect();
+                            let preview = if body.len() > 120 {
+                                format!("{preview}...")
+                            } else {
+                                preview
+                            };
+                            println!(
+                                "  {} {} {} - {}",
+                                crate::output::detail::format_health(health),
+                                crate::output::color::dim(date),
+                                crate::output::color::bold(&user),
+                                preview,
+                            );
+                        }
+                    }
+                    _ => println!("  No updates found for this initiative."),
+                }
+            }
+        }
+
+        InitiativesCommand::PostUpdate {
+            name_or_id,
+            body,
+            health,
+        } => {
+            let id = resolve_initiative_id(&client, name_or_id).await?;
+            let query = r#"
+                mutation($input: InitiativeUpdateCreateInput!) {
+                    initiativeUpdateCreate(input: $input) {
+                        success
+                    }
+                }
+            "#;
+            let input = json!({
+                "initiativeId": id,
+                "body": body,
+                "health": health,
+            });
+            let variables = json!({ "input": input });
+            let result = client.query_raw(query, Some(variables)).await?;
+
+            if json {
+                crate::output::print_json(&result);
+            } else {
+                let success = result
+                    .pointer("/data/initiativeUpdateCreate/success")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+                if success {
+                    println!(
+                        "  {} Posted update to initiative {}",
+                        crate::output::color::green("OK"),
+                        crate::output::color::bold(name_or_id),
+                    );
+                } else {
+                    println!(
+                        "  {} Failed to post update",
+                        crate::output::color::red("ERROR")
+                    );
+                }
+            }
+        }
+
+        InitiativesCommand::AddProject {
+            initiative_name_or_id,
+            project_name,
+        } => {
+            let initiative_id = resolve_initiative_id(&client, initiative_name_or_id).await?;
+            let project_id = client.get_project_id(project_name).await?;
+            let query = r#"
+                mutation($input: InitiativeToProjectCreateInput!) {
+                    initiativeToProjectCreate(input: $input) {
+                        success
+                    }
+                }
+            "#;
+            let input = json!({
+                "initiativeId": initiative_id,
+                "projectId": project_id,
+            });
+            let variables = json!({ "input": input });
+            let result = client.query_raw(query, Some(variables)).await?;
+
+            if json {
+                crate::output::print_json(&result);
+            } else {
+                let success = result
+                    .pointer("/data/initiativeToProjectCreate/success")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+                if success {
+                    println!(
+                        "  {} Linked project {} to initiative {}",
+                        crate::output::color::green("OK"),
+                        crate::output::color::bold(project_name),
+                        crate::output::color::bold(initiative_name_or_id),
+                    );
+                } else {
+                    println!(
+                        "  {} Failed to link project",
+                        crate::output::color::red("ERROR")
+                    );
+                }
+            }
+        }
+
+        InitiativesCommand::RemoveProject {
+            initiative_name_or_id,
+            project_name,
+        } => {
+            let initiative_id = resolve_initiative_id(&client, initiative_name_or_id).await?;
+
+            // Find the initiativeToProject link ID
+            let list_query = r#"
+                query($id: String!) {
+                    initiative(id: $id) {
+                        initiativeToProjects {
+                            nodes { id project { id name } }
+                        }
+                    }
+                }
+            "#;
+            let list_variables = json!({ "id": initiative_id });
+            let list_result = client.query_raw(list_query, Some(list_variables)).await?;
+
+            let needle = project_name.to_lowercase();
+            let link_id = list_result
+                .pointer("/data/initiative/initiativeToProjects/nodes")
+                .and_then(|v| v.as_array())
+                .and_then(|nodes| {
+                    nodes.iter().find(|n| {
+                        n.pointer("/project/name")
+                            .and_then(|v| v.as_str())
+                            .map(|name| name.to_lowercase().contains(&needle))
+                            .unwrap_or(false)
+                    })
+                })
+                .and_then(|n| n.get("id"))
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string())
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "Project '{}' not linked to initiative '{}'",
+                        project_name,
+                        initiative_name_or_id
+                    )
+                })?;
+
+            let delete_query = r#"
+                mutation($id: String!) {
+                    initiativeToProjectDelete(id: $id) {
+                        success
+                    }
+                }
+            "#;
+            let delete_variables = json!({ "id": link_id });
+            let result = client
+                .query_raw(delete_query, Some(delete_variables))
+                .await?;
+
+            if json {
+                crate::output::print_json(&result);
+            } else {
+                let success = result
+                    .pointer("/data/initiativeToProjectDelete/success")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+                if success {
+                    println!(
+                        "  {} Unlinked project {} from initiative {}",
+                        crate::output::color::green("OK"),
+                        crate::output::color::bold(project_name),
+                        crate::output::color::bold(initiative_name_or_id),
+                    );
+                } else {
+                    println!(
+                        "  {} Failed to unlink project",
                         crate::output::color::red("ERROR")
                     );
                 }
