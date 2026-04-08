@@ -16,6 +16,9 @@ async fn main() {
         Commands::Issues(args) => commands::issues::execute(args, cli.json, cli.debug).await,
         Commands::Projects(args) => commands::projects::execute(args, cli.json, cli.debug).await,
         Commands::Cycles(args) => commands::cycles::execute(args, cli.json, cli.debug).await,
+        Commands::Initiatives(args) => {
+            commands::initiatives::execute(args, cli.json, cli.debug).await
+        }
         Commands::Roadmap(args) => commands::roadmap::execute(args, cli.json, cli.debug).await,
         Commands::Labels(args) => commands::labels::execute(args, cli.json, cli.debug).await,
         Commands::Teams(args) => commands::teams::execute(args, cli.json, cli.debug).await,

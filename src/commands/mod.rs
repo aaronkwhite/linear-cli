@@ -1,6 +1,7 @@
 pub mod customers;
 pub mod cycles;
 pub mod docs;
+pub mod initiatives;
 pub mod issues;
 pub mod labels;
 pub mod notifications;

@@ -72,7 +72,8 @@ lin teams list                # List teams
 | `issues` | List, create, update, search, comment, archive issues |
 | `projects` | List, create, update projects and their issues |
 | `cycles` | List, create, manage cycles and cycle issues |
-| `roadmap` | Project updates, milestones, initiatives |
+| `initiatives` | Manage initiatives: list, create, update, projects |
+| `roadmap` | Project updates and milestones |
 | `labels` | Create, manage, apply labels |
 | `teams` | List teams, members, states, workload |
 | `relations` | Issue dependencies and relations |

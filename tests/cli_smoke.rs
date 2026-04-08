@@ -146,6 +146,23 @@ fn test_cycles_list_help() {
         .stdout(predicate::str::contains("--type"));
 }
 
+// --- Initiatives ---
+
+#[test]
+fn test_initiatives_help() {
+    lin()
+        .args(["initiatives", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("list"))
+        .stdout(predicate::str::contains("get"))
+        .stdout(predicate::str::contains("create"))
+        .stdout(predicate::str::contains("update"))
+        .stdout(predicate::str::contains("archive"))
+        .stdout(predicate::str::contains("delete"))
+        .stdout(predicate::str::contains("projects"));
+}
+
 // --- Roadmap ---
 
 #[test]
@@ -159,8 +176,7 @@ fn test_roadmap_help() {
         .stdout(predicate::str::contains("milestones"))
         .stdout(predicate::str::contains("create-milestone"))
         .stdout(predicate::str::contains("update-milestone"))
-        .stdout(predicate::str::contains("delete-milestone"))
-        .stdout(predicate::str::contains("initiatives"));
+        .stdout(predicate::str::contains("delete-milestone"));
 }
 
 // --- Labels ---
@@ -285,6 +301,7 @@ fn test_help_lists_all_commands() {
         .stdout(predicate::str::contains("issues"))
         .stdout(predicate::str::contains("projects"))
         .stdout(predicate::str::contains("cycles"))
+        .stdout(predicate::str::contains("initiatives"))
         .stdout(predicate::str::contains("roadmap"))
         .stdout(predicate::str::contains("labels"))
         .stdout(predicate::str::contains("teams"))

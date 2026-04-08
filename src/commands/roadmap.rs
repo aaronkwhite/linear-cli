@@ -66,12 +66,6 @@ pub enum RoadmapCommand {
         /// Milestone ID
         milestone_id: String,
     },
-    /// List initiatives
-    Initiatives {
-        /// Max results
-        #[arg(long, default_value = "20")]
-        limit: i32,
-    },
 }
 
 pub async fn execute(args: &RoadmapArgs, json: bool, debug: bool) -> anyhow::Result<()> {
@@ -377,57 +371,6 @@ pub async fn execute(args: &RoadmapArgs, json: bool, debug: bool) -> anyhow::Res
                         "  {} Failed to delete milestone",
                         crate::output::color::red("ERROR")
                     );
-                }
-            }
-        }
-
-        RoadmapCommand::Initiatives { limit } => {
-            let query = r#"
-                query($first: Int!) {
-                    initiatives(first: $first) {
-                        nodes {
-                            id name description status
-                            createdAt
-                        }
-                    }
-                }
-            "#;
-            let variables = json!({ "first": limit });
-            let result = client.query_raw(query, Some(variables)).await?;
-
-            if json {
-                crate::output::print_json(&result);
-            } else {
-                let nodes = result
-                    .pointer("/data/initiatives/nodes")
-                    .and_then(|v| v.as_array());
-                match nodes {
-                    Some(initiatives) if !initiatives.is_empty() => {
-                        let rows: Vec<Vec<String>> = initiatives
-                            .iter()
-                            .map(|i| {
-                                vec![
-                                    i.get("name")
-                                        .and_then(|v| v.as_str())
-                                        .unwrap_or("-")
-                                        .to_string(),
-                                    i.get("status")
-                                        .and_then(|v| v.as_str())
-                                        .unwrap_or("-")
-                                        .to_string(),
-                                    i.get("description")
-                                        .and_then(|v| v.as_str())
-                                        .unwrap_or("-")
-                                        .to_string(),
-                                ]
-                            })
-                            .collect();
-                        crate::output::table::print_table(
-                            &["Name", "Status", "Description"],
-                            &rows,
-                        );
-                    }
-                    _ => println!("  No initiatives found."),
                 }
             }
         }

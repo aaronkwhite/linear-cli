@@ -27,7 +27,9 @@ pub enum Commands {
     Projects(crate::commands::projects::ProjectsArgs),
     /// Manage cycles
     Cycles(crate::commands::cycles::CyclesArgs),
-    /// Roadmap: updates, milestones, initiatives
+    /// Manage initiatives
+    Initiatives(crate::commands::initiatives::InitiativesArgs),
+    /// Roadmap: project updates and milestones
     Roadmap(crate::commands::roadmap::RoadmapArgs),
     /// Manage labels
     Labels(crate::commands::labels::LabelsArgs),
