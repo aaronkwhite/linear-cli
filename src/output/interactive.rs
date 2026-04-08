@@ -1,5 +1,5 @@
 use console::Term;
-use dialoguer::{theme::ColorfulTheme, Confirm, FuzzySelect};
+use dialoguer::{Confirm, FuzzySelect, theme::ColorfulTheme};
 
 pub fn is_interactive() -> bool {
     Term::stdout().is_term()

@@ -1,4 +1,4 @@
-use comfy_table::{presets::UTF8_FULL_CONDENSED, Attribute, Cell, ContentArrangement, Table};
+use comfy_table::{Attribute, Cell, ContentArrangement, Table, presets::UTF8_FULL_CONDENSED};
 
 pub fn print_table(headers: &[&str], rows: &[Vec<String>]) {
     let mut table = Table::new();
