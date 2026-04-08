@@ -42,8 +42,8 @@ pub fn load() -> anyhow::Result<Config> {
 
 /// Save the config to disk, creating the directory if needed.
 pub fn save(config: &Config) -> anyhow::Result<()> {
-    let dir = config_dir()
-        .ok_or_else(|| anyhow::anyhow!("Could not determine config directory"))?;
+    let dir =
+        config_dir().ok_or_else(|| anyhow::anyhow!("Could not determine config directory"))?;
     let path = dir.join("config.toml");
 
     fs::create_dir_all(&dir)?;
@@ -81,7 +81,10 @@ mod tests {
         config.auth.api_key = Some("lin_api_test123".to_string());
         let serialized = toml::to_string_pretty(&config).unwrap();
         let deserialized: Config = toml::from_str(&serialized).unwrap();
-        assert_eq!(deserialized.auth.api_key.as_deref(), Some("lin_api_test123"));
+        assert_eq!(
+            deserialized.auth.api_key.as_deref(),
+            Some("lin_api_test123")
+        );
     }
 
     #[test]

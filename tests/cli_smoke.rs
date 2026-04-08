@@ -425,10 +425,7 @@ fn test_config_path_json() {
 
 #[test]
 fn test_config_get_token_no_config() {
-    lin()
-        .args(["config", "get-token"])
-        .assert()
-        .success();
+    lin().args(["config", "get-token"]).assert().success();
 }
 
 #[test]
