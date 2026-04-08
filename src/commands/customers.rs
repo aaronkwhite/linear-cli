@@ -458,10 +458,8 @@ pub async fn execute(args: &CustomersArgs, json: bool, debug: bool) -> anyhow::R
                         customer(id: $id) {
                             name
                             needs {
-                                nodes {
-                                    id body createdAt
-                                    issue { identifier title }
-                                }
+                                id body createdAt
+                                issue { identifier title }
                             }
                         }
                     }
@@ -473,7 +471,7 @@ pub async fn execute(args: &CustomersArgs, json: bool, debug: bool) -> anyhow::R
                     crate::output::print_json(&result);
                 } else {
                     let nodes = result
-                        .pointer("/data/customer/needs/nodes")
+                        .pointer("/data/customer/needs")
                         .and_then(|v| v.as_array());
                     match nodes {
                         Some(needs) if !needs.is_empty() => {
