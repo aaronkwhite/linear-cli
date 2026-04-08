@@ -69,10 +69,10 @@ lin teams list                # List teams
 
 | Group | Description |
 |-------|-------------|
-| `issues` | List, create, update, search, comment, archive issues |
-| `projects` | List, create, update projects and their issues |
-| `cycles` | List, create, manage cycles and cycle issues |
-| `initiatives` | Manage initiatives: list, create, update, projects |
+| `issues` | List, create, update, search, comment, archive, branch lookup |
+| `projects` | List, create, update, search, archive, delete projects |
+| `cycles` | List, create, manage, archive cycles and cycle issues |
+| `initiatives` | Manage initiatives, status updates, link projects |
 | `roadmap` | Project updates and milestones |
 | `labels` | Create, manage, apply labels |
 | `teams` | List teams, members, states, workload |
@@ -80,7 +80,10 @@ lin teams list                # List teams
 | `customers` | Customer management, needs, tiers |
 | `views` | Custom views and their issues |
 | `docs` | Documents: create, search, manage |
-| `notifications` | View and manage notifications |
+| `notifications` | View, read, archive, snooze notifications |
+| `me` | Show authenticated user info |
+| `attachments` | Manage issue attachments and links |
+| `search` | Search across issues, projects, and documents |
 
 ## Why CLI over MCP?
 
