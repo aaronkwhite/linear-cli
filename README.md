@@ -18,7 +18,7 @@ brew install aaronkwhite/tap/lin
 ### Cargo
 
 ```bash
-cargo install linear-cli
+cargo install lincli
 ```
 
 ### Pre-built Binaries

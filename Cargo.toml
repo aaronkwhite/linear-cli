@@ -1,5 +1,5 @@
 [package]
-name = "linear-cli"
+name = "lincli"
 version = "2026.4.0"
 edition = "2021"
 description = "Linear CLI — manage issues, projects, cycles, and more from the terminal"
