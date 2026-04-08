@@ -10,7 +10,7 @@ pub enum LinearError {
 
     #[error(
         "LINEAR_API_KEY not found.\n\
-         Set it via environment variable or .env file.\n\
+         Run `lin config set-token` to save your key, or set the LINEAR_API_KEY environment variable.\n\
          Get your key from: Linear Settings > API > Personal API keys"
     )]
     NoApiKey,

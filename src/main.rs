@@ -1,6 +1,7 @@
 mod cli;
 mod client;
 mod commands;
+mod config;
 mod error;
 mod graphql;
 mod output;
@@ -34,6 +35,7 @@ async fn main() {
             commands::attachments::execute(args, cli.json, cli.debug).await
         }
         Commands::Search(args) => commands::search::execute(args, cli.json, cli.debug).await,
+        Commands::Config(args) => commands::config::execute(args, cli.json, cli.debug).await,
         Commands::Completions { shell } => {
             let mut cmd = Cli::command();
             clap_complete::generate(*shell, &mut cmd, "lin", &mut std::io::stdout());

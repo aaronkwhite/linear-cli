@@ -1,4 +1,5 @@
 pub mod attachments;
+pub mod config;
 pub mod customers;
 pub mod cycles;
 pub mod docs;

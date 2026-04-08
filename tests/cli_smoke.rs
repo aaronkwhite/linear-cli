@@ -391,6 +391,51 @@ fn test_search_missing_arg() {
     lin().args(["search"]).assert().failure();
 }
 
+// --- Config ---
+
+#[test]
+fn test_config_help() {
+    lin()
+        .args(["config", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("set-token"))
+        .stdout(predicate::str::contains("get-token"))
+        .stdout(predicate::str::contains("path"));
+}
+
+#[test]
+fn test_config_path() {
+    lin()
+        .args(["config", "path"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("config.toml"));
+}
+
+#[test]
+fn test_config_path_json() {
+    lin()
+        .args(["--json", "config", "path"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("\"path\""))
+        .stdout(predicate::str::contains("config.toml"));
+}
+
+#[test]
+fn test_config_get_token_no_config() {
+    lin()
+        .args(["config", "get-token"])
+        .assert()
+        .success();
+}
+
+#[test]
+fn test_config_missing_subcommand() {
+    lin().args(["config"]).assert().failure();
+}
+
 // --- Completions ---
 
 #[test]
@@ -471,5 +516,6 @@ fn test_help_lists_all_commands() {
         .stdout(predicate::str::contains("me"))
         .stdout(predicate::str::contains("attachments"))
         .stdout(predicate::str::contains("search"))
-        .stdout(predicate::str::contains("completions"));
+        .stdout(predicate::str::contains("completions"))
+        .stdout(predicate::str::contains("config"));
 }

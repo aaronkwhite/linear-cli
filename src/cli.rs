@@ -52,6 +52,8 @@ pub enum Commands {
     Attachments(crate::commands::attachments::AttachmentsArgs),
     /// Search across issues, projects, and documents
     Search(crate::commands::search::SearchArgs),
+    /// Manage CLI configuration
+    Config(crate::commands::config::ConfigArgs),
     /// Generate shell completions
     Completions {
         /// Shell to generate completions for

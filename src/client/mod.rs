@@ -47,7 +47,12 @@ impl LinearClient {
             }
         }
 
-        // 2. .env and .env.local files
+        // 2. Config file (~/.config/lin/config.toml)
+        if let Some(key) = crate::config::get_api_key() {
+            return Ok(key);
+        }
+
+        // 3. .env and .env.local files
         for filename in &[".env", ".env.local"] {
             for dir in Self::search_dirs() {
                 let path = dir.join(filename);
