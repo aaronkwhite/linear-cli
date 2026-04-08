@@ -85,17 +85,40 @@ pub fn find_team<'a>(
 
 pub fn find_user<'a>(users: &'a [CachedUser], name: &str) -> Result<&'a CachedUser, LinearError> {
     let needle = name.to_lowercase();
+    // Also normalize dots/underscores to spaces for fuzzy matching (e.g., "sam.volin" -> "sam volin")
+    let needle_normalized = needle.replace(['.', '_'], " ");
+
+    // Helper: check if any of a user's fields match the needle
+    let matches = |u: &CachedUser| -> bool {
+        let fields: Vec<String> = [
+            u.display_name.as_deref(),
+            u.name.as_deref(),
+            u.email.as_deref(),
+        ]
+        .iter()
+        .filter_map(|f| f.map(|s| s.to_lowercase()))
+        .collect();
+
+        for field in &fields {
+            if field == &needle || field.contains(&needle) {
+                return true;
+            }
+            // Also try normalized needle (dots/underscores as spaces)
+            if needle_normalized != needle {
+                let field_normalized = field.replace(['.', '_'], " ");
+                if field_normalized == needle_normalized
+                    || field_normalized.contains(&needle_normalized)
+                {
+                    return true;
+                }
+            }
+        }
+        false
+    };
+
     users
         .iter()
-        .find(|u| {
-            let display = u
-                .display_name
-                .as_deref()
-                .or(u.name.as_deref())
-                .unwrap_or("")
-                .to_lowercase();
-            display == needle || display.contains(&needle)
-        })
+        .find(|u| matches(u))
         .ok_or_else(|| LinearError::NotFound {
             entity: "User",
             name: name.to_string(),
@@ -172,14 +195,21 @@ mod tests {
                 id: "u1".into(),
                 name: Some("Alice Smith".into()),
                 display_name: Some("Alice".into()),
-                email: None,
+                email: Some("alice@example.com".into()),
                 active: true,
             },
             CachedUser {
                 id: "u2".into(),
                 name: Some("Bob Jones".into()),
                 display_name: None,
-                email: None,
+                email: Some("bob.jones@example.com".into()),
+                active: true,
+            },
+            CachedUser {
+                id: "u3".into(),
+                name: Some("Sam Volin".into()),
+                display_name: Some("Sam Volin".into()),
+                email: Some("sam.volin@example.com".into()),
                 active: true,
             },
         ]
@@ -225,6 +255,35 @@ mod tests {
         let users = test_users();
         let user = find_user(&users, "Bob Jones").unwrap();
         assert_eq!(user.id, "u2");
+    }
+
+    #[test]
+    fn test_find_user_by_email() {
+        let users = test_users();
+        let user = find_user(&users, "alice@example.com").unwrap();
+        assert_eq!(user.id, "u1");
+    }
+
+    #[test]
+    fn test_find_user_by_email_partial() {
+        let users = test_users();
+        let user = find_user(&users, "sam.volin").unwrap();
+        assert_eq!(user.id, "u3");
+    }
+
+    #[test]
+    fn test_find_user_dot_normalized() {
+        let users = test_users();
+        // "sam.volin" should match "Sam Volin" via dot-to-space normalization
+        let user = find_user(&users, "sam.volin").unwrap();
+        assert_eq!(user.id, "u3");
+    }
+
+    #[test]
+    fn test_find_user_case_insensitive() {
+        let users = test_users();
+        let user = find_user(&users, "SAM VOLIN").unwrap();
+        assert_eq!(user.id, "u3");
     }
 
     #[test]

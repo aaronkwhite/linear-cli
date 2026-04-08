@@ -61,15 +61,38 @@ pub async fn execute(args: &AttachmentsArgs, json: bool, debug: bool) -> anyhow:
             issue_identifier,
             limit,
         } => {
+            // Resolve the issue identifier (e.g., ENG-123) to an ID first,
+            // then query attachments through the issue connection.
+            let issue_id = if crate::util::looks_like_uuid(issue_identifier) {
+                issue_identifier.clone()
+            } else {
+                // Resolve identifier like ENG-123 to UUID
+                let resolve_query = r#"
+                    query($id: String!) {
+                        issue(id: $id) { id }
+                    }
+                "#;
+                let resolve_result = client
+                    .query_raw(resolve_query, Some(json!({ "id": issue_identifier })))
+                    .await?;
+                resolve_result
+                    .pointer("/data/issue/id")
+                    .and_then(|v| v.as_str())
+                    .map(String::from)
+                    .ok_or_else(|| anyhow::anyhow!("Issue not found: {issue_identifier}"))?
+            };
+
             let query = r#"
-                query($filter: AttachmentFilter, $first: Int!) {
-                    attachments(filter: $filter, first: $first) {
-                        nodes { id title subtitle url sourceType createdAt }
+                query($id: String!, $first: Int!) {
+                    issue(id: $id) {
+                        attachments(first: $first) {
+                            nodes { id title subtitle url sourceType createdAt }
+                        }
                     }
                 }
             "#;
             let variables = json!({
-                "filter": { "issueId": { "eq": issue_identifier } },
+                "id": issue_id,
                 "first": limit,
             });
             let result = client.query_raw(query, Some(variables)).await?;
@@ -78,7 +101,7 @@ pub async fn execute(args: &AttachmentsArgs, json: bool, debug: bool) -> anyhow:
                 crate::output::print_json(&result);
             } else {
                 let nodes = result
-                    .pointer("/data/attachments/nodes")
+                    .pointer("/data/issue/attachments/nodes")
                     .and_then(|v| v.as_array());
                 match nodes {
                     Some(attachments) if !attachments.is_empty() => {

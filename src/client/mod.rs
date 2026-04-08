@@ -264,21 +264,44 @@ impl LinearClient {
     ) -> Result<Vec<String>, LinearError> {
         let cache_key = team_key.unwrap_or("__workspace__");
         if !self.cache.labels.contains_key(cache_key) {
-            let (query, variables) = if let Some(tk) = team_key {
+            if let Some(tk) = team_key {
                 let team_id = self.get_team_id(tk).await?;
-                (
-                    r#"query($teamId: String!) { issueLabels(filter: { team: { id: { eq: $teamId } } }) { nodes { id name } } }"#,
-                    Some(serde_json::json!({"teamId": team_id})),
-                )
+
+                // Query team-scoped labels
+                let team_query = r#"query($teamId: String!) { issueLabels(filter: { team: { id: { eq: $teamId } } }) { nodes { id name } } }"#;
+                let team_result = self
+                    .query_raw(team_query, Some(serde_json::json!({"teamId": team_id})))
+                    .await?;
+                let team_nodes = team_result
+                    .pointer("/data/issueLabels/nodes")
+                    .ok_or_else(|| LinearError::GraphQL("No labels data".into()))?;
+                let mut labels: Vec<cache::CachedLabel> =
+                    serde_json::from_value(team_nodes.clone())?;
+
+                // Also query workspace-level labels (no team)
+                let ws_query = r#"query { issueLabels(filter: { team: { null: true } }) { nodes { id name } } }"#;
+                let ws_result = self.query_raw(ws_query, None).await?;
+                if let Some(ws_nodes) = ws_result.pointer("/data/issueLabels/nodes") {
+                    let ws_labels: Vec<cache::CachedLabel> =
+                        serde_json::from_value(ws_nodes.clone())?;
+                    for wl in ws_labels {
+                        if !labels.iter().any(|l| l.id == wl.id) {
+                            labels.push(wl);
+                        }
+                    }
+                }
+
+                self.cache.labels.insert(cache_key.to_string(), labels);
             } else {
-                ("query { issueLabels { nodes { id name } } }", None)
-            };
-            let result = self.query_raw(query, variables).await?;
-            let nodes = result
-                .pointer("/data/issueLabels/nodes")
-                .ok_or_else(|| LinearError::GraphQL("No labels data".into()))?;
-            let labels: Vec<cache::CachedLabel> = serde_json::from_value(nodes.clone())?;
-            self.cache.labels.insert(cache_key.to_string(), labels);
+                let result = self
+                    .query_raw("query { issueLabels { nodes { id name } } }", None)
+                    .await?;
+                let nodes = result
+                    .pointer("/data/issueLabels/nodes")
+                    .ok_or_else(|| LinearError::GraphQL("No labels data".into()))?;
+                let labels: Vec<cache::CachedLabel> = serde_json::from_value(nodes.clone())?;
+                self.cache.labels.insert(cache_key.to_string(), labels);
+            }
         }
         let entry = self.cache.labels.get(cache_key).unwrap();
         cache::find_labels(entry.value(), names)

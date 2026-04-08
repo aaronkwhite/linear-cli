@@ -5,6 +5,7 @@ mod config;
 mod error;
 mod graphql;
 mod output;
+mod util;
 
 use clap::{CommandFactory, Parser};
 use cli::{Cli, Commands};

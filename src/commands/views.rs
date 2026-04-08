@@ -87,6 +87,57 @@ pub enum ViewsCommand {
     },
 }
 
+/// Resolve a view identifier to a UUID. If it already looks like a UUID, return it as-is.
+/// Otherwise, list all custom views and fuzzy-match by name (case-insensitive substring).
+async fn resolve_view_id(client: &LinearClient, id_or_name: &str) -> anyhow::Result<String> {
+    if crate::util::looks_like_uuid(id_or_name) {
+        return Ok(id_or_name.to_string());
+    }
+
+    // Not a UUID — search by name
+    let query = r#"
+        query {
+            customViews(first: 250) {
+                nodes { id name }
+            }
+        }
+    "#;
+    let result = client.query_raw(query, None).await?;
+    let nodes = result
+        .pointer("/data/customViews/nodes")
+        .and_then(|v| v.as_array())
+        .ok_or_else(|| anyhow::anyhow!("Could not fetch custom views"))?;
+
+    let needle = id_or_name.to_lowercase();
+
+    // Try exact match first, then substring
+    let found = nodes
+        .iter()
+        .find(|v| {
+            v.get("name")
+                .and_then(|n| n.as_str())
+                .map(|n| n.to_lowercase() == needle)
+                .unwrap_or(false)
+        })
+        .or_else(|| {
+            nodes.iter().find(|v| {
+                v.get("name")
+                    .and_then(|n| n.as_str())
+                    .map(|n| n.to_lowercase().contains(&needle))
+                    .unwrap_or(false)
+            })
+        });
+
+    match found {
+        Some(view) => view
+            .get("id")
+            .and_then(|v| v.as_str())
+            .map(String::from)
+            .ok_or_else(|| anyhow::anyhow!("View matched but has no ID")),
+        None => Err(anyhow::anyhow!("View not found: {id_or_name}")),
+    }
+}
+
 pub async fn execute(args: &ViewsArgs, json: bool, debug: bool) -> anyhow::Result<()> {
     let client = LinearClient::new(None, debug)?;
 
@@ -189,6 +240,7 @@ pub async fn execute(args: &ViewsArgs, json: bool, debug: bool) -> anyhow::Resul
         }
 
         ViewsCommand::Get { view_id } => {
+            let view_id = resolve_view_id(&client, view_id).await?;
             let query = r#"
                 query($id: String!) {
                     customView(id: $id) {
@@ -331,6 +383,7 @@ pub async fn execute(args: &ViewsArgs, json: bool, debug: bool) -> anyhow::Resul
             filter,
             icon,
         } => {
+            let view_id = resolve_view_id(&client, view_id).await?;
             let query = r#"
                 mutation($id: String!, $input: CustomViewUpdateInput!) {
                     customViewUpdate(id: $id, input: $input) {
@@ -373,7 +426,7 @@ pub async fn execute(args: &ViewsArgs, json: bool, debug: bool) -> anyhow::Resul
                     println!(
                         "  {} Updated view {}",
                         crate::output::color::green("OK"),
-                        crate::output::color::bold(view_id),
+                        crate::output::color::bold(&view_id),
                     );
                 } else {
                     println!(
@@ -385,6 +438,7 @@ pub async fn execute(args: &ViewsArgs, json: bool, debug: bool) -> anyhow::Resul
         }
 
         ViewsCommand::Delete { view_id } => {
+            let view_id = resolve_view_id(&client, view_id).await?;
             if crate::output::interactive::is_interactive()
                 && !crate::output::interactive::confirm(&format!("Delete view {}?", view_id))?
             {
@@ -413,7 +467,7 @@ pub async fn execute(args: &ViewsArgs, json: bool, debug: bool) -> anyhow::Resul
                     println!(
                         "  {} Deleted view {}",
                         crate::output::color::green("OK"),
-                        crate::output::color::bold(view_id),
+                        crate::output::color::bold(&view_id),
                     );
                 } else {
                     println!(
@@ -425,6 +479,7 @@ pub async fn execute(args: &ViewsArgs, json: bool, debug: bool) -> anyhow::Resul
         }
 
         ViewsCommand::Issues { view_id, limit } => {
+            let view_id = resolve_view_id(&client, view_id).await?;
             // Get the view's filter data, then query issues with those filters
             let view_query = r#"
                 query($id: String!) {
