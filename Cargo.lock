@@ -1175,7 +1175,7 @@ dependencies = [
 
 [[package]]
 name = "lincli"
-version = "2026.4.3"
+version = "2026.4.4"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -1185,6 +1185,7 @@ dependencies = [
  "console",
  "cynic",
  "cynic-codegen",
+ "cynic-parser",
  "dashmap",
  "dialoguer",
  "dirs",
