@@ -113,13 +113,47 @@ Examples:
 Run `lin <command> --help` for full flag details.
 ```
 
-### Why CLI over MCP?
+## Why CLI over MCP?
+
+MCP servers inject the full JSON schema for every tool into the LLM's context window on every message — whether those tools are used or not. This creates a permanent tax on every interaction.
+
+### Token Cost
+
+| Metric | CLI | MCP | Difference |
+|---|---|---|---|
+| Idle context cost | 0 tokens | ~19,659 tokens | CLI loads nothing upfront |
+| Simple query (e.g., repo info) | ~1,365 tokens | ~44,026 tokens | **32x** more expensive |
+| PR details + review | ~1,648 tokens | ~32,279 tokens | **20x** more expensive |
+| Complex multi-step task | ~8,750 tokens | ~37,402 tokens | **4x** more expensive |
+| Monthly cost @ 10K ops | ~$3.20 | ~$55.20 | **17x** more expensive |
+
+*Source: [Scalekit benchmark](https://www.scalekit.com/blog/mcp-vs-cli-use), 75 runs, Claude Sonnet 4, p < 0.05*
+
+### Why the Gap Is So Large
+
+MCP loads the entire API surface into context on every message. Linear's official MCP server injects 22 tool schemas (~19,659 tokens) before you ask a single question. Connect 3 MCP servers and you can lose **72% of your context window at idle**.
+
+A CLI pays only for what it uses. `lin issues list --team ENG --json` costs ~15 tokens for the command string. The other 200+ subcommands cost nothing because they're never loaded.
+
+### Reliability
 
 | | CLI | MCP |
 |---|---|---|
-| Tokens per operation | ~1,300 | ~44,000 |
-| Reliability | 100% | ~72% |
-| Dependencies | Single binary | Schema injection |
+| Success rate | 100% | 72% |
+| Failure modes | Exit code + stderr | TCP timeouts, schema injection failures, transport errors, silent tool dropping |
+| Dependencies | Single binary in PATH | JSON-RPC, transport negotiation, schema validation |
+
+*Source: [Scalekit benchmark](https://www.scalekit.com/blog/mcp-vs-cli-use), 25 runs per method*
+
+### Industry Trend
+
+- **Perplexity** dropped MCP internally, citing context window waste and authentication issues ([source](https://nevo.systems/blogs/news/perplexity-drops-mcp-protocol-72-percent-context-window-waste))
+- **mcp2cli** (wraps MCP servers as CLIs) measured **96-99% token reduction** ([source](https://blog.orangecountyai.com/mcp2cli-one-cli-for-every-api-zero-wasted-tokens/))
+- "MCP is dead, long live the CLI" hit the Hacker News front page ([discussion](https://news.ycombinator.com/item?id=47208398))
+
+### When MCP Still Makes Sense
+
+MCP works well for non-technical users in chat interfaces where CLI access isn't available, or for services that don't have a CLI wrapper. For developer tooling where you have shell access, CLI wins on every axis.
 
 ## Development
 
