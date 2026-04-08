@@ -5,8 +5,8 @@ Thanks for your interest in contributing! Here's how to get started.
 ## Development Setup
 
 ```bash
-git clone https://github.com/aaronkwhite/lin-cli.git
-cd lin-cli
+git clone https://github.com/aaronkwhite/linear-cli.git
+cd linear-cli
 cargo build
 cargo test
 ```

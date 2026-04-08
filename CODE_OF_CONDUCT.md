@@ -20,7 +20,7 @@ Examples of unacceptable behavior:
 
 ## Enforcement
 
-Instances of unacceptable behavior may be reported via [GitHub's private vulnerability reporting](https://github.com/aaronkwhite/lin-cli/security/advisories/new) or by contacting the maintainers directly.
+Instances of unacceptable behavior may be reported via [GitHub's private vulnerability reporting](https://github.com/aaronkwhite/linear-cli/security/advisories/new) or by contacting the maintainers directly.
 
 Project maintainers will review and investigate all complaints and will respond in a way that is appropriate to the circumstances.
 

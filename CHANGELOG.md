@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to lin-cli will be documented in this file.
+All notable changes to linear-cli will be documented in this file.
 
 Versioning follows [CalVer](https://calver.org/) with format `YYYY.MM.PATCH`.
 

@@ -1,8 +1,8 @@
 # lin — Linear CLI
 
-[![CI](https://github.com/aaronkwhite/lin-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/aaronkwhite/lin-cli/actions/workflows/ci.yml)
-[![Crates.io](https://img.shields.io/crates/v/lin-cli.svg)](https://crates.io/crates/lin-cli)
-[![Downloads](https://img.shields.io/crates/d/lin-cli.svg)](https://crates.io/crates/lin-cli)
+[![CI](https://github.com/aaronkwhite/linear-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/aaronkwhite/linear-cli/actions/workflows/ci.yml)
+[![Crates.io](https://img.shields.io/crates/v/linear-cli.svg)](https://crates.io/crates/linear-cli)
+[![Downloads](https://img.shields.io/crates/d/linear-cli.svg)](https://crates.io/crates/linear-cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 A fast, native CLI for [Linear](https://linear.app). Manage issues, projects, cycles, and more from your terminal.
@@ -18,18 +18,18 @@ brew install aaronkwhite/tap/lin
 ### Cargo
 
 ```bash
-cargo install lin-cli
+cargo install linear-cli
 ```
 
 ### Pre-built Binaries
 
-Download from [GitHub Releases](https://github.com/aaronkwhite/lin-cli/releases) — available for macOS (Intel & Apple Silicon) and Linux (x86 & ARM).
+Download from [GitHub Releases](https://github.com/aaronkwhite/linear-cli/releases) — available for macOS (Intel & Apple Silicon) and Linux (x86 & ARM).
 
 ### From Source
 
 ```bash
-git clone https://github.com/aaronkwhite/lin-cli.git
-cd lin-cli
+git clone https://github.com/aaronkwhite/linear-cli.git
+cd linear-cli
 cargo install --path .
 ```
 

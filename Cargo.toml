@@ -1,11 +1,11 @@
 [package]
-name = "lin-cli"
+name = "linear-cli"
 version = "2026.4.0"
 edition = "2021"
 description = "Linear CLI — manage issues, projects, cycles, and more from the terminal"
 license = "MIT"
-repository = "https://github.com/aaronkwhite/lin-cli"
-homepage = "https://github.com/aaronkwhite/lin-cli"
+repository = "https://github.com/aaronkwhite/linear-cli"
+homepage = "https://github.com/aaronkwhite/linear-cli"
 authors = ["Aaron K White"]
 readme = "README.md"
 keywords = ["cli", "linear", "graphql", "issue-tracking"]
