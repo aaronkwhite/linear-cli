@@ -80,6 +80,29 @@ pub enum ProjectsCommand {
         #[arg(long)]
         target_date: Option<String>,
     },
+    /// Search projects by name or keyword
+    Search {
+        /// Search query
+        query: String,
+        /// Max results
+        #[arg(long, default_value = "25")]
+        limit: i32,
+    },
+    /// Archive a project
+    Archive {
+        /// Project name
+        name: String,
+    },
+    /// Unarchive a project
+    Unarchive {
+        /// Project name
+        name: String,
+    },
+    /// Delete a project
+    Delete {
+        /// Project name
+        name: String,
+    },
 }
 
 pub async fn execute(args: &ProjectsArgs, json: bool, debug: bool) -> anyhow::Result<()> {
@@ -429,6 +452,169 @@ pub async fn execute(args: &ProjectsArgs, json: bool, debug: bool) -> anyhow::Re
                 } else {
                     println!(
                         "  {} Failed to update project",
+                        crate::output::color::red("ERROR")
+                    );
+                }
+            }
+        }
+
+        ProjectsCommand::Search { query: term, limit } => {
+            let query = r#"
+                query($term: String!, $first: Int) {
+                    searchProjects(term: $term, first: $first) {
+                        nodes { id name state lead { displayName } startDate targetDate }
+                    }
+                }
+            "#;
+            let variables = json!({ "term": term, "first": limit });
+            let result = client.query_raw(query, Some(variables)).await?;
+
+            if json {
+                crate::output::print_json(&result);
+            } else {
+                let nodes = result
+                    .pointer("/data/searchProjects/nodes")
+                    .and_then(|v| v.as_array());
+                match nodes {
+                    Some(projects) if !projects.is_empty() => {
+                        let rows: Vec<Vec<String>> = projects
+                            .iter()
+                            .map(|p| {
+                                vec![
+                                    p.get("name")
+                                        .and_then(|v| v.as_str())
+                                        .unwrap_or("-")
+                                        .to_string(),
+                                    p.get("state")
+                                        .and_then(|v| v.as_str())
+                                        .unwrap_or("-")
+                                        .to_string(),
+                                    crate::output::detail::format_user(p.get("lead")),
+                                    p.get("startDate")
+                                        .and_then(|v| v.as_str())
+                                        .unwrap_or("-")
+                                        .to_string(),
+                                    p.get("targetDate")
+                                        .and_then(|v| v.as_str())
+                                        .unwrap_or("-")
+                                        .to_string(),
+                                ]
+                            })
+                            .collect();
+                        crate::output::table::print_table(
+                            &["Name", "Status", "Lead", "Start", "Target"],
+                            &rows,
+                        );
+                    }
+                    _ => println!("  No projects found."),
+                }
+            }
+        }
+
+        ProjectsCommand::Archive { name } => {
+            if crate::output::interactive::is_interactive()
+                && !crate::output::interactive::confirm(&format!("Archive project {name}?"))?
+            {
+                println!("Cancelled.");
+                return Ok(());
+            }
+
+            let project_id = client.get_project_id(name).await?;
+            let query = r#"
+                mutation($id: String!) {
+                    projectArchive(id: $id) { success }
+                }
+            "#;
+            let variables = json!({ "id": project_id });
+            let result = client.query_raw(query, Some(variables)).await?;
+
+            if json {
+                crate::output::print_json(&result);
+            } else {
+                let success = result
+                    .pointer("/data/projectArchive/success")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+                if success {
+                    println!(
+                        "  {} Archived project {}",
+                        crate::output::color::green("OK"),
+                        crate::output::color::bold(name),
+                    );
+                } else {
+                    println!(
+                        "  {} Failed to archive project",
+                        crate::output::color::red("ERROR")
+                    );
+                }
+            }
+        }
+
+        ProjectsCommand::Unarchive { name } => {
+            let project_id = client.get_project_id(name).await?;
+            let query = r#"
+                mutation($id: String!) {
+                    projectUnarchive(id: $id) { success }
+                }
+            "#;
+            let variables = json!({ "id": project_id });
+            let result = client.query_raw(query, Some(variables)).await?;
+
+            if json {
+                crate::output::print_json(&result);
+            } else {
+                let success = result
+                    .pointer("/data/projectUnarchive/success")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+                if success {
+                    println!(
+                        "  {} Unarchived project {}",
+                        crate::output::color::green("OK"),
+                        crate::output::color::bold(name),
+                    );
+                } else {
+                    println!(
+                        "  {} Failed to unarchive project",
+                        crate::output::color::red("ERROR")
+                    );
+                }
+            }
+        }
+
+        ProjectsCommand::Delete { name } => {
+            if crate::output::interactive::is_interactive()
+                && !crate::output::interactive::confirm(&format!("Delete project {name}?"))?
+            {
+                println!("Cancelled.");
+                return Ok(());
+            }
+
+            let project_id = client.get_project_id(name).await?;
+            let query = r#"
+                mutation($id: String!) {
+                    projectDelete(id: $id) { success }
+                }
+            "#;
+            let variables = json!({ "id": project_id });
+            let result = client.query_raw(query, Some(variables)).await?;
+
+            if json {
+                crate::output::print_json(&result);
+            } else {
+                let success = result
+                    .pointer("/data/projectDelete/success")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+                if success {
+                    println!(
+                        "  {} Deleted project {}",
+                        crate::output::color::green("OK"),
+                        crate::output::color::bold(name),
+                    );
+                } else {
+                    println!(
+                        "  {} Failed to delete project",
                         crate::output::color::red("ERROR")
                     );
                 }
