@@ -1,8 +1,8 @@
 # lin — Linear CLI
 
 [![CI](https://github.com/aaronkwhite/linear-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/aaronkwhite/linear-cli/actions/workflows/ci.yml)
-[![Crates.io](https://img.shields.io/crates/v/linear-cli.svg)](https://crates.io/crates/linear-cli)
-[![Downloads](https://img.shields.io/crates/d/linear-cli.svg)](https://crates.io/crates/linear-cli)
+[![Crates.io](https://img.shields.io/crates/v/lincli.svg)](https://crates.io/crates/lincli)
+[![Downloads](https://img.shields.io/crates/d/lincli.svg)](https://crates.io/crates/lincli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 A fast, native CLI for [Linear](https://linear.app). Manage issues, projects, cycles, and more from your terminal.
