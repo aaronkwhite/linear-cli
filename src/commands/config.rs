@@ -20,13 +20,13 @@ pub enum ConfigCommand {
 
 pub async fn execute(args: &ConfigArgs, json: bool, _debug: bool) -> anyhow::Result<()> {
     match &args.command {
-        ConfigCommand::SetToken => set_token(json).await,
+        ConfigCommand::SetToken => set_token(json),
         ConfigCommand::GetToken => get_token(json),
         ConfigCommand::Path => print_path(json),
     }
 }
 
-async fn set_token(json: bool) -> anyhow::Result<()> {
+fn set_token(json: bool) -> anyhow::Result<()> {
     let key = Password::with_theme(&ColorfulTheme::default())
         .with_prompt("Enter your Linear API key")
         .interact()?;

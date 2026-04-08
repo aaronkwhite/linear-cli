@@ -41,10 +41,10 @@ impl LinearClient {
 
     fn resolve_api_key() -> Result<String, LinearError> {
         // 1. Environment variable
-        if let Ok(key) = env::var("LINEAR_API_KEY") {
-            if !key.is_empty() {
-                return Ok(key);
-            }
+        if let Ok(key) = env::var("LINEAR_API_KEY")
+            && !key.is_empty()
+        {
+            return Ok(key);
         }
 
         // 2. Config file (~/.config/lin/config.toml)
@@ -132,15 +132,15 @@ impl LinearClient {
 
             if !status.is_success() {
                 // Try to extract GraphQL error message
-                if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&response_text) {
-                    if let Some(errors) = parsed.get("errors").and_then(|e| e.as_array()) {
-                        let msgs: Vec<&str> = errors
-                            .iter()
-                            .filter_map(|e| e.get("message").and_then(|m| m.as_str()))
-                            .collect();
-                        if !msgs.is_empty() {
-                            return Err(LinearError::GraphQL(msgs.join("; ")));
-                        }
+                if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&response_text)
+                    && let Some(errors) = parsed.get("errors").and_then(|e| e.as_array())
+                {
+                    let msgs: Vec<&str> = errors
+                        .iter()
+                        .filter_map(|e| e.get("message").and_then(|m| m.as_str()))
+                        .collect();
+                    if !msgs.is_empty() {
+                        return Err(LinearError::GraphQL(msgs.join("; ")));
                     }
                 }
                 let truncated = if response_text.len() > 200 {
@@ -158,14 +158,14 @@ impl LinearClient {
             let gql_response: serde_json::Value =
                 serde_json::from_str(&response_text).map_err(LinearError::Json)?;
 
-            if let Some(errors) = gql_response.get("errors").and_then(|e| e.as_array()) {
-                if !errors.is_empty() {
-                    let msgs: Vec<&str> = errors
-                        .iter()
-                        .filter_map(|e| e.get("message").and_then(|m| m.as_str()))
-                        .collect();
-                    return Err(LinearError::GraphQL(msgs.join("; ")));
-                }
+            if let Some(errors) = gql_response.get("errors").and_then(|e| e.as_array())
+                && !errors.is_empty()
+            {
+                let msgs: Vec<&str> = errors
+                    .iter()
+                    .filter_map(|e| e.get("message").and_then(|m| m.as_str()))
+                    .collect();
+                return Err(LinearError::GraphQL(msgs.join("; ")));
             }
 
             return Ok(gql_response);

@@ -201,14 +201,14 @@ pub async fn execute(args: &DocsArgs, json: bool, debug: bool) -> anyhow::Result
                     );
                 }
 
-                if let Some(content) = doc.get("content").and_then(|v| v.as_str()) {
-                    if !content.is_empty() {
-                        crate::output::detail::print_section("Content");
-                        let skin = termimad::MadSkin::default();
-                        let rendered = skin.term_text(content);
-                        for line in rendered.to_string().lines() {
-                            println!("  {line}");
-                        }
+                if let Some(content) = doc.get("content").and_then(|v| v.as_str())
+                    && !content.is_empty()
+                {
+                    crate::output::detail::print_section("Content");
+                    let skin = termimad::MadSkin::default();
+                    let rendered = skin.term_text(content);
+                    for line in rendered.to_string().lines() {
+                        println!("  {line}");
                     }
                 }
             }

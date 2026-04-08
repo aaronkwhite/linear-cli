@@ -62,12 +62,11 @@ pub async fn execute(args: &SearchArgs, json: bool, debug: bool) -> anyhow::Resu
         if let Some(issues) = issue_result
             .pointer("/data/searchIssues/nodes")
             .and_then(|v| v.as_array())
+            && !issues.is_empty()
         {
-            if !issues.is_empty() {
-                println!("\n  {}", crate::output::color::bold("Issues"));
-                for issue in issues {
-                    crate::output::detail::print_issue_summary(issue);
-                }
+            println!("\n  {}", crate::output::color::bold("Issues"));
+            for issue in issues {
+                crate::output::detail::print_issue_summary(issue);
             }
         }
 
@@ -75,53 +74,51 @@ pub async fn execute(args: &SearchArgs, json: bool, debug: bool) -> anyhow::Resu
         if let Some(projects) = project_result
             .pointer("/data/searchProjects/nodes")
             .and_then(|v| v.as_array())
+            && !projects.is_empty()
         {
-            if !projects.is_empty() {
-                println!("\n  {}", crate::output::color::bold("Projects"));
-                let rows: Vec<Vec<String>> = projects
-                    .iter()
-                    .map(|p| {
-                        vec![
-                            p["name"].as_str().unwrap_or("-").to_string(),
-                            p["state"].as_str().unwrap_or("-").to_string(),
-                            p.pointer("/lead/displayName")
-                                .and_then(|v| v.as_str())
-                                .unwrap_or("-")
-                                .to_string(),
-                        ]
-                    })
-                    .collect();
-                crate::output::table::print_table(&["Name", "Status", "Lead"], &rows);
-            }
+            println!("\n  {}", crate::output::color::bold("Projects"));
+            let rows: Vec<Vec<String>> = projects
+                .iter()
+                .map(|p| {
+                    vec![
+                        p["name"].as_str().unwrap_or("-").to_string(),
+                        p["state"].as_str().unwrap_or("-").to_string(),
+                        p.pointer("/lead/displayName")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("-")
+                            .to_string(),
+                    ]
+                })
+                .collect();
+            crate::output::table::print_table(&["Name", "Status", "Lead"], &rows);
         }
 
         // Documents
         if let Some(docs) = doc_result
             .pointer("/data/searchDocuments/nodes")
             .and_then(|v| v.as_array())
+            && !docs.is_empty()
         {
-            if !docs.is_empty() {
-                println!("\n  {}", crate::output::color::bold("Documents"));
-                let rows: Vec<Vec<String>> = docs
-                    .iter()
-                    .map(|d| {
-                        vec![
-                            d["title"].as_str().unwrap_or("-").to_string(),
-                            d.pointer("/creator/displayName")
-                                .and_then(|v| v.as_str())
-                                .unwrap_or("-")
-                                .to_string(),
-                            d["updatedAt"]
-                                .as_str()
-                                .unwrap_or("-")
-                                .chars()
-                                .take(10)
-                                .collect(),
-                        ]
-                    })
-                    .collect();
-                crate::output::table::print_table(&["Title", "Creator", "Updated"], &rows);
-            }
+            println!("\n  {}", crate::output::color::bold("Documents"));
+            let rows: Vec<Vec<String>> = docs
+                .iter()
+                .map(|d| {
+                    vec![
+                        d["title"].as_str().unwrap_or("-").to_string(),
+                        d.pointer("/creator/displayName")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("-")
+                            .to_string(),
+                        d["updatedAt"]
+                            .as_str()
+                            .unwrap_or("-")
+                            .chars()
+                            .take(10)
+                            .collect(),
+                    ]
+                })
+                .collect();
+            crate::output::table::print_table(&["Title", "Creator", "Updated"], &rows);
         }
 
         // Check if nothing found

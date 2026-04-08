@@ -230,12 +230,12 @@ pub async fn execute(args: &CyclesArgs, json: bool, debug: bool) -> anyhow::Resu
                     crate::output::detail::print_detail("End", &end[..10.min(end.len())], 0);
                 }
 
-                if let Some(issues) = cycle.pointer("/issues/nodes").and_then(|v| v.as_array()) {
-                    if !issues.is_empty() {
-                        crate::output::detail::print_section("Issues");
-                        for issue in issues {
-                            crate::output::detail::print_issue_summary(issue);
-                        }
+                if let Some(issues) = cycle.pointer("/issues/nodes").and_then(|v| v.as_array())
+                    && !issues.is_empty()
+                {
+                    crate::output::detail::print_section("Issues");
+                    for issue in issues {
+                        crate::output::detail::print_issue_summary(issue);
                     }
                 }
             }

@@ -139,10 +139,10 @@ async fn resolve_initiative_id(client: &LinearClient, name_or_id: &str) -> anyho
         .and_then(|v| v.as_array())
     {
         for node in nodes {
-            if let Some(name) = node.get("name").and_then(|v| v.as_str()) {
-                if name.to_lowercase().contains(&needle) {
-                    return Ok(node.get("id").and_then(|v| v.as_str()).unwrap().to_string());
-                }
+            if let Some(name) = node.get("name").and_then(|v| v.as_str())
+                && name.to_lowercase().contains(&needle)
+            {
+                return Ok(node.get("id").and_then(|v| v.as_str()).unwrap().to_string());
             }
         }
     }
@@ -294,10 +294,10 @@ pub async fn execute(args: &InitiativesArgs, json: bool, debug: bool) -> anyhow:
                     &crate::output::detail::format_user(init.get("creator")),
                     1,
                 );
-                if let Some(desc) = init.get("description").and_then(|v| v.as_str()) {
-                    if !desc.is_empty() {
-                        crate::output::detail::print_detail("Description", desc, 1);
-                    }
+                if let Some(desc) = init.get("description").and_then(|v| v.as_str())
+                    && !desc.is_empty()
+                {
+                    crate::output::detail::print_detail("Description", desc, 1);
                 }
                 if let Some(color) = init.get("color").and_then(|v| v.as_str()) {
                     crate::output::detail::print_detail("Color", color, 1);
@@ -340,27 +340,27 @@ pub async fn execute(args: &InitiativesArgs, json: bool, debug: bool) -> anyhow:
 
                 // Projects table
                 let projects = init.pointer("/projects/nodes").and_then(|v| v.as_array());
-                if let Some(projects) = projects {
-                    if !projects.is_empty() {
-                        crate::output::detail::print_section("Projects");
-                        let rows: Vec<Vec<String>> = projects
-                            .iter()
-                            .map(|p| {
-                                vec![
-                                    p.get("name")
-                                        .and_then(|v| v.as_str())
-                                        .unwrap_or("-")
-                                        .to_string(),
-                                    p.get("state")
-                                        .and_then(|v| v.as_str())
-                                        .unwrap_or("-")
-                                        .to_string(),
-                                    crate::output::detail::format_user(p.get("lead")),
-                                ]
-                            })
-                            .collect();
-                        crate::output::table::print_table(&["Name", "Status", "Lead"], &rows);
-                    }
+                if let Some(projects) = projects
+                    && !projects.is_empty()
+                {
+                    crate::output::detail::print_section("Projects");
+                    let rows: Vec<Vec<String>> = projects
+                        .iter()
+                        .map(|p| {
+                            vec![
+                                p.get("name")
+                                    .and_then(|v| v.as_str())
+                                    .unwrap_or("-")
+                                    .to_string(),
+                                p.get("state")
+                                    .and_then(|v| v.as_str())
+                                    .unwrap_or("-")
+                                    .to_string(),
+                                crate::output::detail::format_user(p.get("lead")),
+                            ]
+                        })
+                        .collect();
+                    crate::output::table::print_table(&["Name", "Status", "Lead"], &rows);
                 }
             }
         }

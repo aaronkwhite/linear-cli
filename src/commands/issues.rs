@@ -41,9 +41,6 @@ pub enum IssuesCommand {
     Search {
         /// Search query
         query: String,
-        /// Filter by team
-        #[arg(long)]
-        team: Option<String>,
         /// Max results
         #[arg(long, default_value = "25")]
         limit: i32,
@@ -289,11 +286,7 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
             }
         }
 
-        IssuesCommand::Search {
-            query: term,
-            team,
-            limit,
-        } => {
+        IssuesCommand::Search { query: term, limit } => {
             let gql = r#"
                 query($term: String!, $first: Int) {
                     searchIssues(term: $term, first: $first) {
@@ -307,8 +300,6 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
                     }
                 }
             "#;
-
-            let _ = team; // search API doesn't support team filter directly
 
             let variables = json!({
                 "term": term,

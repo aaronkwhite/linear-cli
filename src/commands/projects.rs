@@ -144,10 +144,10 @@ pub async fn execute(args: &ProjectsArgs, json: bool, debug: bool) -> anyhow::Re
                 println!("\n  {}", crate::output::color::bold(pname));
                 println!();
 
-                if let Some(desc) = project.get("description").and_then(|v| v.as_str()) {
-                    if !desc.is_empty() {
-                        crate::output::detail::print_detail("Description", desc, 0);
-                    }
+                if let Some(desc) = project.get("description").and_then(|v| v.as_str())
+                    && !desc.is_empty()
+                {
+                    crate::output::detail::print_detail("Description", desc, 0);
                 }
                 if let Some(state) = project.get("state").and_then(|v| v.as_str()) {
                     crate::output::detail::print_detail("Status", state, 0);
@@ -188,32 +188,30 @@ pub async fn execute(args: &ProjectsArgs, json: bool, debug: bool) -> anyhow::Re
                 if let Some(updates) = project
                     .pointer("/projectUpdates/nodes")
                     .and_then(|v| v.as_array())
+                    && !updates.is_empty()
                 {
-                    if !updates.is_empty() {
-                        crate::output::detail::print_section("Recent Updates");
-                        for update in updates.iter().take(3) {
-                            let health =
-                                update.get("health").and_then(|v| v.as_str()).unwrap_or("?");
-                            let user = update
-                                .pointer("/user/displayName")
-                                .and_then(|v| v.as_str())
-                                .unwrap_or("?");
-                            let date = update
-                                .get("createdAt")
-                                .and_then(|v| v.as_str())
-                                .unwrap_or("");
-                            let body = update.get("body").and_then(|v| v.as_str()).unwrap_or("");
-                            println!(
-                                "    {} {} {}",
-                                crate::output::detail::format_health(health),
-                                crate::output::color::bold(user),
-                                crate::output::color::dim(date),
-                            );
-                            for line in body.lines().take(3) {
-                                println!("      {line}");
-                            }
-                            println!();
+                    crate::output::detail::print_section("Recent Updates");
+                    for update in updates.iter().take(3) {
+                        let health = update.get("health").and_then(|v| v.as_str()).unwrap_or("?");
+                        let user = update
+                            .pointer("/user/displayName")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("?");
+                        let date = update
+                            .get("createdAt")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("");
+                        let body = update.get("body").and_then(|v| v.as_str()).unwrap_or("");
+                        println!(
+                            "    {} {} {}",
+                            crate::output::detail::format_health(health),
+                            crate::output::color::bold(user),
+                            crate::output::color::dim(date),
+                        );
+                        for line in body.lines().take(3) {
+                            println!("      {line}");
                         }
+                        println!();
                     }
                 }
             }

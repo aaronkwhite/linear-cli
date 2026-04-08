@@ -107,25 +107,25 @@ pub fn print_issue_detail(issue: &Value) {
         print_detail("Due", due, 0);
     }
 
-    if let Some(labels) = issue.pointer("/labels/nodes").and_then(|v| v.as_array()) {
-        if !labels.is_empty() {
-            let names: Vec<&str> = labels
-                .iter()
-                .filter_map(|l| l.get("name").and_then(|n| n.as_str()))
-                .collect();
-            print_detail("Labels", &names.join(", "), 0);
-        }
+    if let Some(labels) = issue.pointer("/labels/nodes").and_then(|v| v.as_array())
+        && !labels.is_empty()
+    {
+        let names: Vec<&str> = labels
+            .iter()
+            .filter_map(|l| l.get("name").and_then(|n| n.as_str()))
+            .collect();
+        print_detail("Labels", &names.join(", "), 0);
     }
 
-    if let Some(parent) = issue.get("parent") {
-        if !parent.is_null() {
-            let pid = parent
-                .get("identifier")
-                .and_then(|v| v.as_str())
-                .unwrap_or("?");
-            let ptitle = parent.get("title").and_then(|v| v.as_str()).unwrap_or("");
-            print_detail("Parent", &format!("{pid} {ptitle}"), 0);
-        }
+    if let Some(parent) = issue.get("parent")
+        && !parent.is_null()
+    {
+        let pid = parent
+            .get("identifier")
+            .and_then(|v| v.as_str())
+            .unwrap_or("?");
+        let ptitle = parent.get("title").and_then(|v| v.as_str()).unwrap_or("");
+        print_detail("Parent", &format!("{pid} {ptitle}"), 0);
     }
 
     if let Some(created) = issue.get("createdAt").and_then(|v| v.as_str()) {
@@ -135,37 +135,37 @@ pub fn print_issue_detail(issue: &Value) {
         print_detail("Updated", &dim(updated), 0);
     }
 
-    if let Some(desc) = issue.get("description").and_then(|v| v.as_str()) {
-        if !desc.is_empty() {
-            print_section("Description");
-            let skin = termimad::MadSkin::default();
-            let rendered = skin.term_text(desc);
-            for line in rendered.to_string().lines() {
-                println!("  {line}");
-            }
+    if let Some(desc) = issue.get("description").and_then(|v| v.as_str())
+        && !desc.is_empty()
+    {
+        print_section("Description");
+        let skin = termimad::MadSkin::default();
+        let rendered = skin.term_text(desc);
+        for line in rendered.to_string().lines() {
+            println!("  {line}");
         }
     }
 
-    if let Some(comments) = issue.pointer("/comments/nodes").and_then(|v| v.as_array()) {
-        if !comments.is_empty() {
-            print_section("Comments");
-            for comment in comments.iter().take(5) {
-                let user = comment
-                    .pointer("/user/displayName")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("?");
-                let date = comment
-                    .get("createdAt")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("");
-                let body = comment.get("body").and_then(|v| v.as_str()).unwrap_or("");
+    if let Some(comments) = issue.pointer("/comments/nodes").and_then(|v| v.as_array())
+        && !comments.is_empty()
+    {
+        print_section("Comments");
+        for comment in comments.iter().take(5) {
+            let user = comment
+                .pointer("/user/displayName")
+                .and_then(|v| v.as_str())
+                .unwrap_or("?");
+            let date = comment
+                .get("createdAt")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
+            let body = comment.get("body").and_then(|v| v.as_str()).unwrap_or("");
 
-                println!("  {} {}", bold(user), dim(date));
-                for line in body.lines().take(5) {
-                    println!("    {line}");
-                }
-                println!();
+            println!("  {} {}", bold(user), dim(date));
+            for line in body.lines().take(5) {
+                println!("    {line}");
             }
+            println!();
         }
     }
 }

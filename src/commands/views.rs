@@ -215,10 +215,10 @@ pub async fn execute(args: &ViewsArgs, json: bool, debug: bool) -> anyhow::Resul
                 println!("\n  {}", crate::output::color::bold(name));
                 println!();
 
-                if let Some(desc) = view.get("description").and_then(|v| v.as_str()) {
-                    if !desc.is_empty() {
-                        crate::output::detail::print_detail("Description", desc, 0);
-                    }
+                if let Some(desc) = view.get("description").and_then(|v| v.as_str())
+                    && !desc.is_empty()
+                {
+                    crate::output::detail::print_detail("Description", desc, 0);
                 }
                 let vis = if view
                     .get("shared")
@@ -243,14 +243,14 @@ pub async fn execute(args: &ViewsArgs, json: bool, debug: bool) -> anyhow::Resul
                     crate::output::detail::print_detail("Icon", icon, 0);
                 }
 
-                if let Some(filter) = view.get("filterData") {
-                    if !filter.is_null() {
-                        crate::output::detail::print_section("Filter Data");
-                        let pretty =
-                            serde_json::to_string_pretty(filter).unwrap_or_else(|_| "?".into());
-                        for line in pretty.lines() {
-                            println!("    {line}");
-                        }
+                if let Some(filter) = view.get("filterData")
+                    && !filter.is_null()
+                {
+                    crate::output::detail::print_section("Filter Data");
+                    let pretty =
+                        serde_json::to_string_pretty(filter).unwrap_or_else(|_| "?".into());
+                    for line in pretty.lines() {
+                        println!("    {line}");
                     }
                 }
             }

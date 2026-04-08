@@ -38,23 +38,25 @@ cargo install --path .
 Get your API key from **Linear Settings > API > Personal API keys**, then:
 
 ```bash
+lin config set-token
+```
+
+Or set it via environment variable:
+
+```bash
 export LINEAR_API_KEY="lin_api_..."
-```
-
-Or create a `.env` file:
-
-```
-LINEAR_API_KEY=lin_api_...
 ```
 
 ## Usage
 
 ```bash
-lin --help                    # Show all commands
-lin issues list --team ENG    # List issues for a team
-lin issues get ENG-123        # Get issue details
-lin projects list             # List projects
-lin teams list                # List teams
+lin --help                                  # Show all commands
+lin issues list --team ENG                  # List issues for a team
+lin issues list --state "In Progress"       # Filter by state
+lin issues list --label bug --label urgent  # Filter by labels
+lin issues get ENG-123                      # Get issue details
+lin projects list                           # List projects
+lin teams list                              # List teams
 ```
 
 ## Global Flags
@@ -84,6 +86,8 @@ lin teams list                # List teams
 | `me` | Show authenticated user info |
 | `attachments` | Manage issue attachments and links |
 | `search` | Search across issues, projects, and documents |
+| `config` | Manage API key and CLI configuration |
+| `completions` | Generate shell completions (bash, zsh, fish, powershell) |
 
 ## Why CLI over MCP?
 

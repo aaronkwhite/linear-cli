@@ -118,10 +118,10 @@ pub async fn execute(args: &TeamsArgs, json: bool, debug: bool) -> anyhow::Resul
                 );
                 println!();
 
-                if let Some(desc) = team.get("description").and_then(|v| v.as_str()) {
-                    if !desc.is_empty() {
-                        crate::output::detail::print_detail("Description", desc, 0);
-                    }
+                if let Some(desc) = team.get("description").and_then(|v| v.as_str())
+                    && !desc.is_empty()
+                {
+                    crate::output::detail::print_detail("Description", desc, 0);
                 }
                 if let Some(tz) = team.get("timezone").and_then(|v| v.as_str()) {
                     crate::output::detail::print_detail("Timezone", tz, 0);
@@ -143,28 +143,28 @@ pub async fn execute(args: &TeamsArgs, json: bool, debug: bool) -> anyhow::Resul
                     }
                 }
 
-                if let Some(cycle) = team.get("activeCycle") {
-                    if !cycle.is_null() {
-                        let cycle_name = cycle.get("name").and_then(|v| v.as_str()).unwrap_or({
-                            // handled below
-                            "Active Cycle"
-                        });
-                        let start = cycle
-                            .get("startsAt")
-                            .and_then(|v| v.as_str())
-                            .map(|s| s.chars().take(10).collect::<String>())
-                            .unwrap_or_default();
-                        let end = cycle
-                            .get("endsAt")
-                            .and_then(|v| v.as_str())
-                            .map(|s| s.chars().take(10).collect::<String>())
-                            .unwrap_or_default();
-                        crate::output::detail::print_detail(
-                            "Active Cycle",
-                            &format!("{cycle_name} ({start} to {end})"),
-                            0,
-                        );
-                    }
+                if let Some(cycle) = team.get("activeCycle")
+                    && !cycle.is_null()
+                {
+                    let cycle_name = cycle.get("name").and_then(|v| v.as_str()).unwrap_or({
+                        // handled below
+                        "Active Cycle"
+                    });
+                    let start = cycle
+                        .get("startsAt")
+                        .and_then(|v| v.as_str())
+                        .map(|s| s.chars().take(10).collect::<String>())
+                        .unwrap_or_default();
+                    let end = cycle
+                        .get("endsAt")
+                        .and_then(|v| v.as_str())
+                        .map(|s| s.chars().take(10).collect::<String>())
+                        .unwrap_or_default();
+                    crate::output::detail::print_detail(
+                        "Active Cycle",
+                        &format!("{cycle_name} ({start} to {end})"),
+                        0,
+                    );
                 }
             }
         }
