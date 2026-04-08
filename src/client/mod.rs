@@ -244,7 +244,7 @@ impl LinearClient {
         if !self.cache.states.contains_key(team_key) {
             let team_id = self.get_team_id(team_key).await?;
             let result = self.query_raw(
-                r#"query($teamId: ID!) { workflowStates(filter: { team: { id: { eq: $teamId } } }) { nodes { id name type } } }"#,
+                r#"query($teamId: String!) { workflowStates(filter: { team: { id: { eq: $teamId } } }) { nodes { id name type } } }"#,
                 Some(serde_json::json!({"teamId": team_id})),
             ).await?;
             let nodes = result
@@ -267,7 +267,7 @@ impl LinearClient {
             let (query, variables) = if let Some(tk) = team_key {
                 let team_id = self.get_team_id(tk).await?;
                 (
-                    r#"query($teamId: ID!) { issueLabels(filter: { team: { id: { eq: $teamId } } }) { nodes { id name } } }"#,
+                    r#"query($teamId: String!) { issueLabels(filter: { team: { id: { eq: $teamId } } }) { nodes { id name } } }"#,
                     Some(serde_json::json!({"teamId": team_id})),
                 )
             } else {

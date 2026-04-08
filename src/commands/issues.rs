@@ -239,7 +239,7 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
                 filter["team"] = json!({ "id": { "eq": team_id } });
             }
             if let Some(state_name) = state {
-                filter["state"] = json!({ "name": { "eqCaseInsensitive": state_name } });
+                filter["state"] = json!({ "name": { "containsIgnoreCase": state_name } });
             }
             if let Some(assignee_name) = assignee {
                 let user_id = client.get_user_id(assignee_name).await?;

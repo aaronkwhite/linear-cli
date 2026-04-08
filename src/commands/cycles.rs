@@ -87,9 +87,9 @@ pub async fn execute(args: &CyclesArgs, json: bool, debug: bool) -> anyhow::Resu
         CyclesCommand::List { team, r#type } => {
             let team_id = client.get_team_id(team).await?;
             let query = r#"
-                query($teamId: ID!) {
+                query($teamId: String!) {
                     team(id: $teamId) {
-                        cycles(first: 50, orderBy: startsAt) {
+                        cycles(first: 50, orderBy: updatedAt) {
                             nodes {
                                 id name number
                                 startsAt endsAt
@@ -244,7 +244,7 @@ pub async fn execute(args: &CyclesArgs, json: bool, debug: bool) -> anyhow::Resu
         CyclesCommand::Issues { team } => {
             let team_id = client.get_team_id(team).await?;
             let query = r#"
-                query($teamId: ID!) {
+                query($teamId: String!) {
                     team(id: $teamId) {
                         activeCycle {
                             id name number
@@ -383,7 +383,7 @@ pub async fn execute(args: &CyclesArgs, json: bool, debug: bool) -> anyhow::Resu
             let team_id = client.get_team_id(team).await?;
             // Get the active cycle ID
             let cycle_query = r#"
-                query($teamId: ID!) {
+                query($teamId: String!) {
                     team(id: $teamId) {
                         activeCycle { id }
                     }

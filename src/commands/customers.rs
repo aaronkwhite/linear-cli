@@ -82,7 +82,7 @@ async fn resolve_customer_id(client: &LinearClient, name: &str) -> anyhow::Resul
             }
         }
     "#;
-    let variables = json!({ "filter": { "name": { "eqCaseInsensitive": name } } });
+    let variables = json!({ "filter": { "name": { "containsIgnoreCase": name } } });
     let result = client.query_raw(query, Some(variables)).await?;
     let id = result
         .pointer("/data/customers/nodes/0/id")

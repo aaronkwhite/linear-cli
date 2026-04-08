@@ -90,7 +90,7 @@ pub async fn execute(args: &TeamsArgs, json: bool, debug: bool) -> anyhow::Resul
         TeamsCommand::Get { key } => {
             let team_id = client.get_team_id(key).await?;
             let query = r#"
-                query($id: ID!) {
+                query($id: String!) {
                     team(id: $id) {
                         id key name description timezone
                         members { nodes { id } }
@@ -172,7 +172,7 @@ pub async fn execute(args: &TeamsArgs, json: bool, debug: bool) -> anyhow::Resul
         TeamsCommand::Members { key } => {
             let team_id = client.get_team_id(key).await?;
             let query = r#"
-                query($id: ID!) {
+                query($id: String!) {
                     team(id: $id) {
                         members {
                             nodes {
@@ -229,7 +229,7 @@ pub async fn execute(args: &TeamsArgs, json: bool, debug: bool) -> anyhow::Resul
         TeamsCommand::States { key } => {
             let team_id = client.get_team_id(key).await?;
             let query = r#"
-                query($teamId: ID!) {
+                query($teamId: String!) {
                     workflowStates(filter: { team: { id: { eq: $teamId } } }) {
                         nodes { id name type position }
                     }

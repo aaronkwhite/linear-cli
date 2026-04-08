@@ -483,7 +483,7 @@ pub async fn execute(args: &LabelsArgs, json: bool, debug: bool) -> anyhow::Resu
 
         LabelsCommand::Usage { name, team, limit } => {
             let mut filter = json!({
-                "labels": { "name": { "eqCaseInsensitive": name } }
+                "labels": { "name": { "containsIgnoreCase": name } }
             });
             if let Some(team_key) = team {
                 let team_id = client.get_team_id(team_key).await?;

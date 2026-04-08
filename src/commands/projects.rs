@@ -310,7 +310,7 @@ pub async fn execute(args: &ProjectsArgs, json: bool, debug: bool) -> anyhow::Re
 
             let mut filter = json!({ "project": { "id": { "eq": project_id } } });
             if let Some(status_name) = status {
-                filter["state"] = json!({ "name": { "eqCaseInsensitive": status_name } });
+                filter["state"] = json!({ "name": { "containsIgnoreCase": status_name } });
             }
 
             let variables = json!({ "filter": filter, "first": limit });
