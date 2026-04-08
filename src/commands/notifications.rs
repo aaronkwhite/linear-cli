@@ -36,6 +36,18 @@ pub enum NotificationsCommand {
         #[arg(long)]
         all: bool,
     },
+    /// Snooze all notifications
+    Snooze {
+        /// Snooze all notifications
+        #[arg(long)]
+        all: bool,
+    },
+    /// Unsnooze all notifications
+    Unsnooze {
+        /// Unsnooze all notifications
+        #[arg(long)]
+        all: bool,
+    },
 }
 
 fn format_notification_type(raw: &str) -> &str {
@@ -297,6 +309,74 @@ pub async fn execute(args: &NotificationsArgs, json: bool, debug: bool) -> anyho
                 }
             } else {
                 anyhow::bail!("Provide a notification ID or use --all");
+            }
+        }
+
+        NotificationsCommand::Snooze { all } => {
+            if !all {
+                anyhow::bail!("Use --all to snooze all notifications");
+            }
+            let query = r#"
+                mutation {
+                    notificationSnoozeAll(input: {}) {
+                        success
+                    }
+                }
+            "#;
+            let result = client.query_raw(query, None).await?;
+
+            if json {
+                crate::output::print_json(&result);
+            } else {
+                let success = result
+                    .pointer("/data/notificationSnoozeAll/success")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+                if success {
+                    println!(
+                        "  {} Snoozed all notifications",
+                        crate::output::color::green("OK"),
+                    );
+                } else {
+                    println!(
+                        "  {} Failed to snooze notifications",
+                        crate::output::color::red("ERROR")
+                    );
+                }
+            }
+        }
+
+        NotificationsCommand::Unsnooze { all } => {
+            if !all {
+                anyhow::bail!("Use --all to unsnooze all notifications");
+            }
+            let query = r#"
+                mutation {
+                    notificationUnsnoozeAll(input: {}) {
+                        success
+                    }
+                }
+            "#;
+            let result = client.query_raw(query, None).await?;
+
+            if json {
+                crate::output::print_json(&result);
+            } else {
+                let success = result
+                    .pointer("/data/notificationUnsnoozeAll/success")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+                if success {
+                    println!(
+                        "  {} Unsnoozed all notifications",
+                        crate::output::color::green("OK"),
+                    );
+                } else {
+                    println!(
+                        "  {} Failed to unsnooze notifications",
+                        crate::output::color::red("ERROR")
+                    );
+                }
             }
         }
     }

@@ -73,6 +73,11 @@ pub enum CyclesCommand {
         /// Issue identifier (e.g., ENG-123)
         issue_id: String,
     },
+    /// Archive a cycle
+    Archive {
+        /// Cycle ID
+        cycle_id: String,
+    },
 }
 
 pub async fn execute(args: &CyclesArgs, json: bool, debug: bool) -> anyhow::Result<()> {
@@ -459,6 +464,39 @@ pub async fn execute(args: &CyclesArgs, json: bool, debug: bool) -> anyhow::Resu
                 } else {
                     println!(
                         "  {} Failed to remove issue from cycle",
+                        crate::output::color::red("ERROR")
+                    );
+                }
+            }
+        }
+
+        CyclesCommand::Archive { cycle_id } => {
+            let query = r#"
+                mutation($id: String!) {
+                    cycleArchive(id: $id) {
+                        success
+                    }
+                }
+            "#;
+            let variables = json!({ "id": cycle_id });
+            let result = client.query_raw(query, Some(variables)).await?;
+
+            if json {
+                crate::output::print_json(&result);
+            } else {
+                let success = result
+                    .pointer("/data/cycleArchive/success")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+                if success {
+                    println!(
+                        "  {} Archived cycle {}",
+                        crate::output::color::green("OK"),
+                        crate::output::color::bold(cycle_id),
+                    );
+                } else {
+                    println!(
+                        "  {} Failed to archive cycle",
                         crate::output::color::red("ERROR")
                     );
                 }
