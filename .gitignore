@@ -5,3 +5,4 @@ docs/content/
 node_modules/
 schema_introspection.json
 schema.graphql
+.claude/worktrees/
