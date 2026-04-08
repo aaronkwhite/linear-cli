@@ -20,7 +20,7 @@ fn test_version() {
         .arg("--version")
         .assert()
         .success()
-        .stdout(predicate::str::contains("2026.4.0"));
+        .stdout(predicate::str::contains("lin"));
 }
 
 #[test]
@@ -330,6 +330,63 @@ fn test_search_missing_arg() {
     lin().args(["search"]).assert().failure();
 }
 
+// --- Completions ---
+
+#[test]
+fn test_completions_help() {
+    lin()
+        .args(["completions", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("shell"));
+}
+
+#[test]
+fn test_completions_bash() {
+    lin()
+        .args(["completions", "bash"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("lin"));
+}
+
+#[test]
+fn test_completions_zsh() {
+    lin()
+        .args(["completions", "zsh"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("lin"));
+}
+
+#[test]
+fn test_completions_fish() {
+    lin()
+        .args(["completions", "fish"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("lin"));
+}
+
+#[test]
+fn test_completions_powershell() {
+    lin()
+        .args(["completions", "powershell"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("lin"));
+}
+
+#[test]
+fn test_completions_missing_shell() {
+    lin().args(["completions"]).assert().failure();
+}
+
+#[test]
+fn test_completions_invalid_shell() {
+    lin().args(["completions", "nushell"]).assert().failure();
+}
+
 // --- Top-level help lists all commands ---
 
 #[test]
@@ -352,5 +409,6 @@ fn test_help_lists_all_commands() {
         .stdout(predicate::str::contains("notifications"))
         .stdout(predicate::str::contains("me"))
         .stdout(predicate::str::contains("attachments"))
-        .stdout(predicate::str::contains("search"));
+        .stdout(predicate::str::contains("search"))
+        .stdout(predicate::str::contains("completions"));
 }

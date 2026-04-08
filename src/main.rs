@@ -5,7 +5,7 @@ mod error;
 mod graphql;
 mod output;
 
-use clap::Parser;
+use clap::{CommandFactory, Parser};
 use cli::{Cli, Commands};
 
 #[tokio::main]
@@ -34,6 +34,11 @@ async fn main() {
             commands::attachments::execute(args, cli.json, cli.debug).await
         }
         Commands::Search(args) => commands::search::execute(args, cli.json, cli.debug).await,
+        Commands::Completions { shell } => {
+            let mut cmd = Cli::command();
+            clap_complete::generate(*shell, &mut cmd, "lin", &mut std::io::stdout());
+            return;
+        }
     };
 
     if let Err(e) = result {

@@ -1,4 +1,5 @@
 use clap::{Parser, Subcommand};
+use clap_complete::Shell;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -51,4 +52,9 @@ pub enum Commands {
     Attachments(crate::commands::attachments::AttachmentsArgs),
     /// Search across issues, projects, and documents
     Search(crate::commands::search::SearchArgs),
+    /// Generate shell completions
+    Completions {
+        /// Shell to generate completions for
+        shell: Shell,
+    },
 }
