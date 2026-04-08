@@ -128,6 +128,31 @@ pub enum IssuesCommand {
         /// Issue identifier
         identifier: String,
     },
+    /// Find issue associated with a git branch name
+    Branch {
+        /// Git branch name
+        branch_name: String,
+    },
+    /// Delete an issue
+    Delete {
+        /// Issue identifier
+        identifier: String,
+    },
+    /// Unarchive an issue
+    Unarchive {
+        /// Issue identifier
+        identifier: String,
+    },
+    /// Subscribe to an issue
+    Subscribe {
+        /// Issue identifier
+        identifier: String,
+    },
+    /// Unsubscribe from an issue
+    Unsubscribe {
+        /// Issue identifier
+        identifier: String,
+    },
 }
 
 pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Result<()> {
@@ -579,6 +604,175 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
                 } else {
                     println!(
                         "  {} Failed to archive issue",
+                        crate::output::color::red("ERROR")
+                    );
+                }
+            }
+        }
+
+        IssuesCommand::Branch { branch_name } => {
+            let query = r#"
+                query($branchName: String!) {
+                    issueVcsBranchSearch(branchName: $branchName) {
+                        id identifier title
+                        state { name }
+                        assignee { displayName }
+                        priority
+                        team { key }
+                    }
+                }
+            "#;
+            let variables = json!({ "branchName": branch_name });
+            let result = client.query_raw(query, Some(variables)).await?;
+
+            if json {
+                crate::output::print_json(&result);
+            } else {
+                let issue = result.pointer("/data/issueVcsBranchSearch");
+                match issue {
+                    Some(i) if !i.is_null() => {
+                        crate::output::detail::print_issue_summary(i);
+                    }
+                    _ => {
+                        println!("  No issue found for branch '{branch_name}'.");
+                    }
+                }
+            }
+        }
+
+        IssuesCommand::Delete { identifier } => {
+            if crate::output::interactive::is_interactive()
+                && !crate::output::interactive::confirm(&format!("Delete issue {}?", identifier))?
+            {
+                println!("Cancelled.");
+                return Ok(());
+            }
+
+            let query = r#"
+                mutation($id: String!) {
+                    issueDelete(id: $id) {
+                        success
+                    }
+                }
+            "#;
+            let variables = json!({ "id": identifier });
+            let result = client.query_raw(query, Some(variables)).await?;
+
+            if json {
+                crate::output::print_json(&result);
+            } else {
+                let success = result
+                    .pointer("/data/issueDelete/success")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+                if success {
+                    println!(
+                        "  {} Deleted issue {}",
+                        crate::output::color::green("OK"),
+                        crate::output::color::bold(identifier),
+                    );
+                } else {
+                    println!(
+                        "  {} Failed to delete issue",
+                        crate::output::color::red("ERROR")
+                    );
+                }
+            }
+        }
+
+        IssuesCommand::Unarchive { identifier } => {
+            let query = r#"
+                mutation($id: String!) {
+                    issueUnarchive(id: $id) {
+                        success
+                    }
+                }
+            "#;
+            let variables = json!({ "id": identifier });
+            let result = client.query_raw(query, Some(variables)).await?;
+
+            if json {
+                crate::output::print_json(&result);
+            } else {
+                let success = result
+                    .pointer("/data/issueUnarchive/success")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+                if success {
+                    println!(
+                        "  {} Unarchived issue {}",
+                        crate::output::color::green("OK"),
+                        crate::output::color::bold(identifier),
+                    );
+                } else {
+                    println!(
+                        "  {} Failed to unarchive issue",
+                        crate::output::color::red("ERROR")
+                    );
+                }
+            }
+        }
+
+        IssuesCommand::Subscribe { identifier } => {
+            let query = r#"
+                mutation($id: String!) {
+                    issueSubscribe(id: $id) {
+                        success
+                    }
+                }
+            "#;
+            let variables = json!({ "id": identifier });
+            let result = client.query_raw(query, Some(variables)).await?;
+
+            if json {
+                crate::output::print_json(&result);
+            } else {
+                let success = result
+                    .pointer("/data/issueSubscribe/success")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+                if success {
+                    println!(
+                        "  {} Subscribed to issue {}",
+                        crate::output::color::green("OK"),
+                        crate::output::color::bold(identifier),
+                    );
+                } else {
+                    println!(
+                        "  {} Failed to subscribe to issue",
+                        crate::output::color::red("ERROR")
+                    );
+                }
+            }
+        }
+
+        IssuesCommand::Unsubscribe { identifier } => {
+            let query = r#"
+                mutation($id: String!) {
+                    issueUnsubscribe(id: $id) {
+                        success
+                    }
+                }
+            "#;
+            let variables = json!({ "id": identifier });
+            let result = client.query_raw(query, Some(variables)).await?;
+
+            if json {
+                crate::output::print_json(&result);
+            } else {
+                let success = result
+                    .pointer("/data/issueUnsubscribe/success")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+                if success {
+                    println!(
+                        "  {} Unsubscribed from issue {}",
+                        crate::output::color::green("OK"),
+                        crate::output::color::bold(identifier),
+                    );
+                } else {
+                    println!(
+                        "  {} Failed to unsubscribe from issue",
                         crate::output::color::red("ERROR")
                     );
                 }
