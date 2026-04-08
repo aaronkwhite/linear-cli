@@ -1175,7 +1175,7 @@ dependencies = [
 
 [[package]]
 name = "lincli"
-version = "2026.4.2"
+version = "2026.4.3"
 dependencies = [
  "anyhow",
  "assert_cmd",
