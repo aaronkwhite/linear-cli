@@ -11,7 +11,7 @@ pub struct Cli {
     #[arg(long, global = true)]
     pub json: bool,
 
-    /// Print GraphQL queries/responses to stderr
+    /// Print GraphQL queries and full API responses to stderr (may contain workspace data)
     #[arg(long, global = true)]
     pub debug: bool,
 

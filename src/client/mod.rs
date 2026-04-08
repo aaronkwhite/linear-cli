@@ -27,6 +27,7 @@ impl LinearClient {
 
         let http = Client::builder()
             .timeout(Duration::from_secs(30))
+            .https_only(true)
             .build()
             .map_err(LinearError::Request)?;
 
@@ -71,11 +72,6 @@ impl LinearClient {
         let mut dirs = Vec::new();
         if let Ok(cwd) = env::current_dir() {
             dirs.push(cwd);
-        }
-        if let Ok(exe) = env::current_exe() {
-            if let Some(parent) = exe.parent() {
-                dirs.push(parent.to_path_buf());
-            }
         }
         dirs
     }
@@ -142,9 +138,14 @@ impl LinearClient {
                         }
                     }
                 }
+                let truncated = if response_text.len() > 200 {
+                    format!("{}... (truncated)", &response_text[..200])
+                } else {
+                    response_text
+                };
                 last_err = Some(LinearError::Http {
                     status: status.as_u16(),
-                    body: response_text,
+                    body: truncated,
                 });
                 continue;
             }
