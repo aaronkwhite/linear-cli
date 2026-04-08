@@ -89,7 +89,31 @@ lin teams list                              # List teams
 | `config` | Manage API key and CLI configuration |
 | `completions` | Generate shell completions (bash, zsh, fish, powershell) |
 
-## Why CLI over MCP?
+## Using with Claude Code
+
+Add this to your project's `CLAUDE.md` to give Claude Code access to Linear:
+
+```markdown
+## Linear
+
+Use the `lin` CLI for all Linear operations. Always use `--json` for structured output.
+
+Examples:
+- `lin issues list --team ENG --json` — list issues
+- `lin issues list --state "In Progress" --json` — filter by state
+- `lin issues get ENG-123 --json` — get issue details
+- `lin issues create --team ENG --title "Title" --json` — create issue
+- `lin issues update ENG-123 --status "Done" --json` — update status
+- `lin issues comment ENG-123 "comment body" --json` — add comment
+- `lin search "query" --json` — search across issues, projects, docs
+- `lin projects list --json` — list projects
+- `lin teams list --json` — list teams
+- `lin me --json` — current user info
+
+Run `lin <command> --help` for full flag details.
+```
+
+### Why CLI over MCP?
 
 | | CLI | MCP |
 |---|---|---|
