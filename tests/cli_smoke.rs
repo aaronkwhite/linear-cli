@@ -50,11 +50,72 @@ fn test_issues_list_help() {
         .assert()
         .success()
         .stdout(predicate::str::contains("--team"))
-        .stdout(predicate::str::contains("--status"))
+        .stdout(predicate::str::contains("--state"))
         .stdout(predicate::str::contains("--assignee"))
         .stdout(predicate::str::contains("--priority"))
         .stdout(predicate::str::contains("--label"))
         .stdout(predicate::str::contains("--limit"));
+}
+
+#[test]
+fn test_issues_list_state_flag_accepted() {
+    // --state flag should be accepted (parsing only, no API call)
+    lin()
+        .args(["issues", "list", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--state"));
+}
+
+#[test]
+fn test_issues_list_status_alias_accepted() {
+    // --status should still work as an alias for --state
+    lin()
+        .args(["issues", "list", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--status"));
+}
+
+#[test]
+fn test_issues_list_label_repeatable() {
+    // --label can be specified multiple times (help should show it)
+    lin()
+        .args(["issues", "list", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--label"))
+        .stdout(predicate::str::contains("multiple times"));
+}
+
+#[test]
+fn test_issues_list_all_filter_flags_parse() {
+    // Verify all filter flags parse correctly together (will fail at API call, not arg parse)
+    let output = lin()
+        .args([
+            "issues",
+            "list",
+            "--team",
+            "ENG",
+            "--state",
+            "In Progress",
+            "--assignee",
+            "Alice",
+            "--priority",
+            "2",
+            "--label",
+            "bug",
+            "--label",
+            "feature",
+            "--limit",
+            "10",
+        ])
+        .output()
+        .expect("failed to run command");
+    // The command will fail (no API key), but it should NOT fail due to argument parsing.
+    // A clap parse error exits with code 2; a runtime error exits with code 1.
+    let code = output.status.code().unwrap_or(0);
+    assert_ne!(code, 2, "clap argument parsing failed");
 }
 
 #[test]

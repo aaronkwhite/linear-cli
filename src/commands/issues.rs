@@ -21,18 +21,18 @@ pub enum IssuesCommand {
         /// Filter by team key or name
         #[arg(long)]
         team: Option<String>,
-        /// Filter by status name
-        #[arg(long)]
-        status: Option<String>,
+        /// Filter by workflow state name
+        #[arg(long, visible_alias = "status")]
+        state: Option<String>,
         /// Filter by assignee name
         #[arg(long)]
         assignee: Option<String>,
         /// Filter by priority (1=Urgent, 2=High, 3=Medium, 4=Low)
         #[arg(long)]
         priority: Option<i32>,
-        /// Filter by label name
+        /// Filter by label name (can be specified multiple times)
         #[arg(long)]
-        label: Option<String>,
+        label: Vec<String>,
         /// Max results
         #[arg(long, default_value = "50")]
         limit: i32,
@@ -199,7 +199,7 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
 
         IssuesCommand::List {
             team,
-            status,
+            state,
             assignee,
             priority,
             label,
@@ -214,6 +214,7 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
                             assignee { displayName }
                             priority
                             team { key }
+                            labels { nodes { name } }
                         }
                         pageInfo { hasNextPage endCursor }
                     }
@@ -240,8 +241,8 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
                 let team_id = client.get_team_id(team_key).await?;
                 filter["team"] = json!({ "id": { "eq": team_id } });
             }
-            if let Some(status_name) = status {
-                filter["state"] = json!({ "name": { "eqCaseInsensitive": status_name } });
+            if let Some(state_name) = state {
+                filter["state"] = json!({ "name": { "eqCaseInsensitive": state_name } });
             }
             if let Some(assignee_name) = assignee {
                 let user_id = client.get_user_id(assignee_name).await?;
@@ -250,8 +251,17 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
             if let Some(p) = priority {
                 filter["priority"] = json!({ "eq": p });
             }
-            if let Some(label_name) = label {
-                filter["labels"] = json!({ "name": { "eqCaseInsensitive": label_name } });
+            if !label.is_empty() {
+                let label_refs: Vec<&str> = label.iter().map(|s| s.as_str()).collect();
+                let label_ids = client
+                    .get_label_ids(&label_refs, team_key.as_deref())
+                    .await?;
+                // Use "some" filter: match issues that have at least one of the specified labels
+                let or_filters: Vec<serde_json::Value> = label_ids
+                    .iter()
+                    .map(|id| json!({ "id": { "eq": id } }))
+                    .collect();
+                filter["labels"] = json!({ "some": { "or": or_filters } });
             }
 
             let variables = json!({
