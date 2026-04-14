@@ -220,6 +220,12 @@ impl LinearClient {
     }
 
     pub async fn get_project_id(&self, name: &str) -> Result<String, LinearError> {
+        // 1. UUID passthrough — no API call needed
+        if crate::util::looks_like_uuid(name) {
+            return Ok(name.to_string());
+        }
+
+        // 2. Name match via cache
         let projects = if let Some(p) = self.cache.projects.get() {
             p.clone()
         } else {
@@ -233,7 +239,40 @@ impl LinearClient {
             let _ = self.cache.projects.set(projects.clone());
             projects
         };
-        Ok(cache::find_project(&projects, name)?.id.clone())
+
+        if let Ok(project) = cache::find_project(&projects, name) {
+            return Ok(project.id.clone());
+        }
+
+        // 3. SlugId fallback — for URL slugs like "my-project-abc123"
+        let slug_query = r#"
+            query($slug: String!) {
+                projects(filter: { slugId: { eq: $slug } }, first: 1) {
+                    nodes { id name }
+                }
+            }
+        "#;
+        let slug_result = self
+            .query_raw(
+                slug_query,
+                Some(serde_json::json!({ "slug": name })),
+            )
+            .await?;
+        if let Some(nodes) = slug_result
+            .pointer("/data/projects/nodes")
+            .and_then(|v| v.as_array())
+        {
+            if let Some(project) = nodes.first() {
+                if let Some(id) = project.get("id").and_then(|v| v.as_str()) {
+                    return Ok(id.to_string());
+                }
+            }
+        }
+
+        Err(LinearError::NotFound {
+            entity: "Project",
+            name: name.to_string(),
+        })
     }
 
     pub async fn get_state_id(
@@ -311,6 +350,16 @@ impl LinearClient {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn looks_like_uuid_passthrough() {
+        // UUIDs should be detectable so get_project_id can skip the API call
+        assert!(crate::util::looks_like_uuid(
+            "550e8400-e29b-41d4-a716-446655440000"
+        ));
+        assert!(!crate::util::looks_like_uuid("my-project"));
+        assert!(!crate::util::looks_like_uuid("My Project Name"));
+    }
 
     #[test]
     fn test_resolve_api_key_from_env() {
