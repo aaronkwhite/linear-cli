@@ -320,7 +320,12 @@ pub async fn execute(args: &ProjectsArgs, json: bool, debug: bool) -> anyhow::Re
             let result = client.query_raw(query, Some(variables)).await?;
 
             if json {
-                crate::output::print_json(&result);
+                // Emit {"issues": [...]} — consistent with other list commands
+                let nodes = result
+                    .pointer("/data/issues/nodes")
+                    .cloned()
+                    .unwrap_or(serde_json::Value::Array(vec![]));
+                crate::output::print_json(&serde_json::json!({ "issues": nodes }));
             } else {
                 let nodes = result
                     .pointer("/data/issues/nodes")
@@ -502,7 +507,12 @@ pub async fn execute(args: &ProjectsArgs, json: bool, debug: bool) -> anyhow::Re
             let result = client.query_raw(query, Some(variables)).await?;
 
             if json {
-                crate::output::print_json(&result);
+                // Emit {"projects": [...]} — predictable key for all project list commands
+                let nodes = result
+                    .pointer("/data/searchProjects/nodes")
+                    .cloned()
+                    .unwrap_or(serde_json::Value::Array(vec![]));
+                crate::output::print_json(&serde_json::json!({ "projects": nodes }));
             } else {
                 let nodes = result
                     .pointer("/data/searchProjects/nodes")
