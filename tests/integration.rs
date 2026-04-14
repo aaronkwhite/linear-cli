@@ -163,7 +163,7 @@ fn test_projects_issues_json_shape() {
     let proj_v: serde_json::Value =
         serde_json::from_str(&proj_stdout).expect("projects list output not valid JSON");
     let name = proj_v
-        .pointer("/projects/0/name")
+        .pointer("/projects/nodes/0/name")
         .and_then(|v| v.as_str())
         .expect("no projects found");
 
