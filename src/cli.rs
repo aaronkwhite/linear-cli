@@ -22,6 +22,8 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
+    /// Execute a raw GraphQL query or mutation
+    Api(crate::commands::api::ApiArgs),
     /// Manage issues
     Issues(crate::commands::issues::IssuesArgs),
     /// Manage projects
