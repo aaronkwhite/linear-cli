@@ -330,8 +330,8 @@ fn all_graphql_queries_are_valid() {
 /// Truncate a string for display in error messages.
 fn truncate(s: &str, max: usize) -> String {
     let flat: String = s.chars().filter(|c| !c.is_ascii_control()).collect();
-    if flat.len() > max {
-        format!("{}...", &flat[..max])
+    if flat.chars().count() > max {
+        format!("{}...", flat.chars().take(max).collect::<String>())
     } else {
         flat
     }

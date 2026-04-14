@@ -4,6 +4,21 @@ All notable changes to linear-cli will be documented in this file.
 
 Versioning follows [CalVer](https://calver.org/) with format `YYYY.MM.PATCH`.
 
+## [2026.4.12] — 2026-04-12
+
+### Added
+- Claude Code skill at `.claude/skills/lin/` — teaches Claude how to use `lin` for Linear tasks, with full command reference and MCP fallback guide
+- `CLAUDE.md` — repo-level agent reference for contributors working on the codebase
+
+### Changed
+- `--json` output is now compact (no indentation) — reduces token cost for AI agent use
+- `--json` output strips the GraphQL `{"data": {...}}` envelope — payloads are returned directly
+
+### Fixed
+- Security audit CI workflow now has `issues: write` permission so it can file advisories
+- Updated `rand` to v0.9.3 (resolves RUSTSEC-2026-0097, unsound advisory)
+- Unicode-safe truncation in GraphQL query validation test helper
+
 ## [2026.4.2] — 2026-04-08
 
 ### Added

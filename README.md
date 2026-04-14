@@ -91,24 +91,30 @@ lin teams list                              # List teams
 
 ## Using with Claude Code
 
-Add this to your project's `CLAUDE.md` to give Claude Code access to Linear:
+### Install the skill (recommended)
+
+A Claude Code skill ships with this repo that teaches Claude how to use `lin` for any Linear task — creating issues, querying status, managing projects and cycles, and more.
+
+```bash
+cp -r .claude/skills/lin ~/.claude/skills/lin
+```
+
+The skill handles tool selection (lin first, Linear MCP as fallback), includes a full command reference, and documents which operations require MCP vs. lin.
+
+### Manual CLAUDE.md snippet
+
+If you prefer a lightweight setup, add this to your project's `CLAUDE.md`:
 
 ```markdown
 ## Linear
 
 Use the `lin` CLI for all Linear operations. Always use `--json` for structured output.
 
-Examples:
 - `lin issues list --team ENG --json` — list issues
-- `lin issues list --state "In Progress" --json` — filter by state
 - `lin issues get ENG-123 --json` — get issue details
 - `lin issues create --team ENG --title "Title" --json` — create issue
 - `lin issues update ENG-123 --status "Done" --json` — update status
-- `lin issues comment ENG-123 "comment body" --json` — add comment
 - `lin search "query" --json` — search across issues, projects, docs
-- `lin projects list --json` — list projects
-- `lin teams list --json` — list teams
-- `lin me --json` — current user info
 
 Run `lin <command> --help` for full flag details.
 ```
