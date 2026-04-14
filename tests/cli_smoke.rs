@@ -516,3 +516,67 @@ fn test_help_lists_all_commands() {
         .stdout(predicate::str::contains("completions"))
         .stdout(predicate::str::contains("config"));
 }
+
+// --- New babyclaw flags ---
+
+#[test]
+fn test_projects_update_add_team_flag() {
+    // Verify --add-team parses; will fail at auth, not arg parse
+    let output = lin()
+        .args(["projects", "update", "My Project", "--add-team", "ENG"])
+        .output()
+        .expect("failed to run command");
+    let code = output.status.code().unwrap_or(0);
+    assert_ne!(code, 2, "clap argument parsing failed");
+}
+
+#[test]
+fn test_cycles_add_cycle_flag() {
+    let output = lin()
+        .args(["cycles", "add", "ENG-123", "--cycle", "cycle-uuid-here"])
+        .output()
+        .expect("failed to run command");
+    let code = output.status.code().unwrap_or(0);
+    assert_ne!(code, 2, "clap argument parsing failed");
+}
+
+#[test]
+fn test_cycles_add_requires_team_or_cycle() {
+    lin()
+        .args(["cycles", "add", "ENG-123"])
+        .assert()
+        .failure();
+}
+
+#[test]
+fn test_issues_update_team_flag() {
+    let output = lin()
+        .args(["issues", "update", "ENG-123", "--team", "HP"])
+        .output()
+        .expect("failed to run command");
+    let code = output.status.code().unwrap_or(0);
+    assert_ne!(code, 2, "clap argument parsing failed");
+}
+
+#[test]
+fn test_api_help() {
+    lin()
+        .args(["api", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("GraphQL"));
+}
+
+#[test]
+fn test_api_missing_query() {
+    lin().args(["api"]).assert().failure();
+}
+
+#[test]
+fn test_api_variables_invalid_json() {
+    lin()
+        .args(["api", "{ viewer { id } }", "--variables", "not-json"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Invalid JSON"));
+}
