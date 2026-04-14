@@ -253,10 +253,7 @@ impl LinearClient {
             }
         "#;
         let slug_result = self
-            .query_raw(
-                slug_query,
-                Some(serde_json::json!({ "slug": name })),
-            )
+            .query_raw(slug_query, Some(serde_json::json!({ "slug": name })))
             .await?;
         if let Some(nodes) = slug_result
             .pointer("/data/projects/nodes")

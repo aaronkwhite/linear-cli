@@ -404,9 +404,7 @@ pub async fn execute(args: &CyclesArgs, json: bool, debug: bool) -> anyhow::Resu
                     cycle_result
                         .pointer("/data/team/activeCycle/id")
                         .and_then(|v| v.as_str())
-                        .ok_or_else(|| {
-                            anyhow::anyhow!("No active cycle for team {team_name}")
-                        })?
+                        .ok_or_else(|| anyhow::anyhow!("No active cycle for team {team_name}"))?
                         .to_string()
                 }
                 (None, None) => {

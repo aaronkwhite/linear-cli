@@ -63,10 +63,15 @@ lin config set-key   # interactive prompt
 | Search everything | `lin search "auth bug" --json` |
 | Create issue | `lin issues create --team ENG --title "..." --json` |
 | Update status | `lin issues update ENG-123 --status "Done" --json` |
+| Move issue to different team | `lin issues update ENG-123 --team HP --json` |
 | Active cycle issues | `lin cycles issues --team ENG --json` |
+| Add issue to specific cycle | `lin cycles add ENG-123 --cycle <id> --json` |
 | List projects | `lin projects list --json` |
+| Add team to project | `lin projects update "My Project" --add-team ENG --json` |
 | My info / verify auth | `lin me --json` |
 | List teams | `lin teams list --json` |
+| Raw GraphQL query | `lin api '{ viewer { id } }' --json` |
+| Raw GraphQL with variables | `lin api '...' --variables '{"id": "abc"}' --json` |
 
 ---
 

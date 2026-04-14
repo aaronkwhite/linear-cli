@@ -542,10 +542,7 @@ fn test_cycles_add_cycle_flag() {
 
 #[test]
 fn test_cycles_add_requires_team_or_cycle() {
-    lin()
-        .args(["cycles", "add", "ENG-123"])
-        .assert()
-        .failure();
+    lin().args(["cycles", "add", "ENG-123"]).assert().failure();
 }
 
 #[test]

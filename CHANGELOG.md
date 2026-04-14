@@ -4,6 +4,18 @@ All notable changes to linear-cli will be documented in this file.
 
 Versioning follows [CalVer](https://calver.org/) with format `YYYY.MM.PATCH`.
 
+## [2026.4.14] — 2026-04-14
+
+### Added
+- `lin api '<query>'` — raw GraphQL passthrough with auth injected automatically
+- `lin issues update --team <TEAM>` — move issues between teams
+- `lin projects update --add-team <TEAM>` — add a team to a project
+- `lin cycles add --cycle <id>` — add issue to a specific cycle, not just the active one
+
+### Fixed
+- `lin projects get` now accepts UUID and URL slugs in addition to project names
+- `lin projects issues --json` and `lin projects search --json` now emit consistent `{"issues": [...]}` and `{"projects": [...]}` shapes
+
 ## [2026.4.12] — 2026-04-12
 
 ### Added
