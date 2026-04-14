@@ -112,6 +112,9 @@ pub enum IssuesCommand {
         /// Milestone name
         #[arg(long)]
         milestone: Option<String>,
+        /// Move issue to a different team (key or name)
+        #[arg(long)]
+        team: Option<String>,
     },
     /// Add a comment to an issue
     Comment {
@@ -434,6 +437,7 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
             project,
             label,
             milestone: _,
+            team,
         } => {
             let query = r#"
                 mutation($id: String!, $input: IssueUpdateInput!) {
@@ -502,6 +506,10 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
             if let Some(project_name) = project {
                 let project_id = client.get_project_id(project_name).await?;
                 input["projectId"] = json!(project_id);
+            }
+            if let Some(team_name) = team {
+                let team_id = client.get_team_id(team_name).await?;
+                input["teamId"] = json!(team_id);
             }
 
             let variables = json!({
