@@ -64,9 +64,12 @@ pub enum CyclesCommand {
     Add {
         /// Issue identifier (e.g., ENG-123)
         issue_id: String,
-        /// Team key or name
+        /// Team key or name (uses active cycle)
         #[arg(long)]
-        team: String,
+        team: Option<String>,
+        /// Cycle ID (overrides --team active cycle lookup)
+        #[arg(long)]
+        cycle: Option<String>,
     },
     /// Remove an issue from its cycle
     Remove {
@@ -379,23 +382,37 @@ pub async fn execute(args: &CyclesArgs, json: bool, debug: bool) -> anyhow::Resu
             }
         }
 
-        CyclesCommand::Add { issue_id, team } => {
-            let team_id = client.get_team_id(team).await?;
-            // Get the active cycle ID
-            let cycle_query = r#"
-                query($teamId: String!) {
-                    team(id: $teamId) {
-                        activeCycle { id }
-                    }
+        CyclesCommand::Add {
+            issue_id,
+            team,
+            cycle,
+        } => {
+            let cycle_id = match (cycle, team) {
+                (Some(cid), _) => cid.clone(),
+                (None, Some(team_name)) => {
+                    let team_id = client.get_team_id(team_name).await?;
+                    let cycle_query = r#"
+                        query($teamId: String!) {
+                            team(id: $teamId) {
+                                activeCycle { id }
+                            }
+                        }
+                    "#;
+                    let cycle_result = client
+                        .query_raw(cycle_query, Some(json!({ "teamId": team_id })))
+                        .await?;
+                    cycle_result
+                        .pointer("/data/team/activeCycle/id")
+                        .and_then(|v| v.as_str())
+                        .ok_or_else(|| {
+                            anyhow::anyhow!("No active cycle for team {team_name}")
+                        })?
+                        .to_string()
                 }
-            "#;
-            let cycle_result = client
-                .query_raw(cycle_query, Some(json!({ "teamId": team_id })))
-                .await?;
-            let cycle_id = cycle_result
-                .pointer("/data/team/activeCycle/id")
-                .and_then(|v| v.as_str())
-                .ok_or_else(|| anyhow::anyhow!("No active cycle for team {team}"))?;
+                (None, None) => {
+                    anyhow::bail!("Provide --team (uses active cycle) or --cycle <id>");
+                }
+            };
 
             let query = r#"
                 mutation($id: String!, $input: IssueUpdateInput!) {
@@ -420,7 +437,7 @@ pub async fn execute(args: &CyclesArgs, json: bool, debug: bool) -> anyhow::Resu
                     .unwrap_or(false);
                 if success {
                     println!(
-                        "  {} Added {} to active cycle",
+                        "  {} Added {} to cycle",
                         crate::output::color::green("OK"),
                         crate::output::color::bold(issue_id),
                     );
