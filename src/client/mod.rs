@@ -255,15 +255,14 @@ impl LinearClient {
         let slug_result = self
             .query_raw(slug_query, Some(serde_json::json!({ "slug": name })))
             .await?;
-        if let Some(nodes) = slug_result
+        if let Some(id) = slug_result
             .pointer("/data/projects/nodes")
             .and_then(|v| v.as_array())
+            .and_then(|nodes| nodes.first())
+            .and_then(|project| project.get("id"))
+            .and_then(|v| v.as_str())
         {
-            if let Some(project) = nodes.first() {
-                if let Some(id) = project.get("id").and_then(|v| v.as_str()) {
-                    return Ok(id.to_string());
-                }
-            }
+            return Ok(id.to_string());
         }
 
         Err(LinearError::NotFound {
