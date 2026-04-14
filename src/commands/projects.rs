@@ -62,7 +62,7 @@ pub enum ProjectsCommand {
     },
     /// Update a project
     Update {
-        /// Project name
+        /// Project name, UUID, or URL slug
         name: String,
         /// New status
         #[arg(long)]
@@ -79,6 +79,9 @@ pub enum ProjectsCommand {
         /// New target date
         #[arg(long)]
         target_date: Option<String>,
+        /// Add a team to this project (by key or name)
+        #[arg(long)]
+        add_team: Option<String>,
     },
     /// Search projects by name or keyword
     Search {
@@ -317,7 +320,12 @@ pub async fn execute(args: &ProjectsArgs, json: bool, debug: bool) -> anyhow::Re
             let result = client.query_raw(query, Some(variables)).await?;
 
             if json {
-                crate::output::print_json(&result);
+                // Emit {"issues": [...]} — consistent with other list commands
+                let nodes = result
+                    .pointer("/data/issues/nodes")
+                    .cloned()
+                    .unwrap_or(serde_json::Value::Array(vec![]));
+                crate::output::print_json(&serde_json::json!({ "issues": nodes }));
             } else {
                 let nodes = result
                     .pointer("/data/issues/nodes")
@@ -402,8 +410,40 @@ pub async fn execute(args: &ProjectsArgs, json: bool, debug: bool) -> anyhow::Re
             description,
             start_date,
             target_date,
+            add_team,
         } => {
             let project_id = client.get_project_id(name).await?;
+
+            let mut input = json!({});
+
+            // If adding a team, fetch current teamIds first
+            if let Some(team_name) = add_team {
+                let current_query = r#"
+                    query($id: String!) {
+                        project(id: $id) {
+                            teams { nodes { id } }
+                        }
+                    }
+                "#;
+                let current = client
+                    .query_raw(current_query, Some(json!({ "id": project_id })))
+                    .await?;
+                let mut team_ids: Vec<String> = current
+                    .pointer("/data/project/teams/nodes")
+                    .and_then(|v| v.as_array())
+                    .map(|arr| {
+                        arr.iter()
+                            .filter_map(|t| t.get("id").and_then(|v| v.as_str()).map(String::from))
+                            .collect()
+                    })
+                    .unwrap_or_default();
+                let new_team_id = client.get_team_id(team_name).await?;
+                if !team_ids.contains(&new_team_id) {
+                    team_ids.push(new_team_id);
+                }
+                input["teamIds"] = json!(team_ids);
+            }
+
             let query = r#"
                 mutation($id: String!, $input: ProjectUpdateInput!) {
                     projectUpdate(id: $id, input: $input) {
@@ -413,7 +453,6 @@ pub async fn execute(args: &ProjectsArgs, json: bool, debug: bool) -> anyhow::Re
                 }
             "#;
 
-            let mut input = json!({});
             if let Some(s) = status {
                 input["state"] = json!(s);
             }
@@ -468,7 +507,12 @@ pub async fn execute(args: &ProjectsArgs, json: bool, debug: bool) -> anyhow::Re
             let result = client.query_raw(query, Some(variables)).await?;
 
             if json {
-                crate::output::print_json(&result);
+                // Emit {"projects": [...]} — predictable key for all project list commands
+                let nodes = result
+                    .pointer("/data/searchProjects/nodes")
+                    .cloned()
+                    .unwrap_or(serde_json::Value::Array(vec![]));
+                crate::output::print_json(&serde_json::json!({ "projects": nodes }));
             } else {
                 let nodes = result
                     .pointer("/data/searchProjects/nodes")

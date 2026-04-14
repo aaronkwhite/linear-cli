@@ -50,13 +50,17 @@ export LINEAR_API_KEY="lin_api_..."
 ## Usage
 
 ```bash
-lin --help                                  # Show all commands
-lin issues list --team ENG                  # List issues for a team
-lin issues list --state "In Progress"       # Filter by state
-lin issues list --label bug --label urgent  # Filter by labels
-lin issues get ENG-123                      # Get issue details
-lin projects list                           # List projects
-lin teams list                              # List teams
+lin --help                                              # Show all commands
+lin issues list --team ENG                              # List issues for a team
+lin issues list --state "In Progress"                   # Filter by state
+lin issues list --label bug --label urgent              # Filter by labels
+lin issues get ENG-123                                  # Get issue details
+lin issues update ENG-123 --team HP                     # Move issue to another team
+lin projects list                                       # List projects
+lin projects update "My Project" --add-team ENG         # Add team to project
+lin cycles add ENG-123 --cycle <id>                     # Add issue to specific cycle
+lin teams list                                          # List teams
+lin api '{ viewer { id displayName } }'                 # Raw GraphQL query
 ```
 
 ## Global Flags
@@ -88,6 +92,7 @@ lin teams list                              # List teams
 | `search` | Search across issues, projects, and documents |
 | `config` | Manage API key and CLI configuration |
 | `completions` | Generate shell completions (bash, zsh, fish, powershell) |
+| `api` | Raw GraphQL passthrough — any query or mutation with auth injected |
 
 ## Using with Claude Code
 

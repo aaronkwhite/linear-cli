@@ -47,6 +47,7 @@ lin issues update <IDENTIFIER>
   --project <NAME>     Move to project
   --label <NAME>       Set label
   --milestone <NAME>   Assign to milestone
+  --team <TEAM>        Move issue to a different team (key or name)
   --json
 
 lin issues comment <IDENTIFIER>
@@ -94,6 +95,7 @@ lin projects update <NAME>
   --status <STATUS>
   --start-date <DATE>
   --target-date <DATE>
+  --add-team <TEAM>    Add a team to this project (key or name)
   --json
 
 lin projects archive <NAME>
@@ -126,7 +128,8 @@ lin cycles create
   --json
 
 lin cycles add <ISSUE_ID>
-  --team <TEAM>        REQUIRED. Adds to active cycle
+  --team <TEAM>        Team key or name (uses active cycle)
+  --cycle <ID>         Specific cycle ID (overrides --team active cycle lookup)
   --json
 
 lin cycles remove <ISSUE_ID>
@@ -303,4 +306,19 @@ lin search <QUERY> --limit <N> --json
 lin config set-key                   # set API key interactively
 lin config show                      # show current config (no secrets)
 lin completions <SHELL>              # generate shell completions
+```
+
+---
+
+## API (Raw GraphQL)
+
+```
+lin api '<QUERY>'
+  --variables <JSON>   JSON variables object (e.g. '{"teamId": "abc"}')
+  (always outputs JSON)
+
+Examples:
+  lin api '{ viewer { id displayName } }'
+  lin api '{ project(id: "uuid") { name teams { nodes { name } } } }'
+  lin api 'mutation($id: String!) { issueArchive(id: $id) { success } }' --variables '{"id": "uuid"}'
 ```

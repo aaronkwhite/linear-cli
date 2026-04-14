@@ -1,3 +1,4 @@
+pub mod api;
 pub mod attachments;
 pub mod config;
 pub mod customers;
