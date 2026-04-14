@@ -60,7 +60,10 @@ mod tests {
         let value = json!({ "data": { "a": 1, "b": 2 } });
         let result = format_json(&value).unwrap();
         assert!(!result.contains('\n'), "output should not contain newlines");
-        assert!(!result.contains("  "), "output should not contain indentation");
+        assert!(
+            !result.contains("  "),
+            "output should not contain indentation"
+        );
     }
 
     #[test]
