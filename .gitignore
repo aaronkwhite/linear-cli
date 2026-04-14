@@ -1,8 +1,24 @@
+# Rust
 /target
-docs/content/
+Cargo.lock.bak
+
+# Environment / secrets
 .env
 .env.local
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Node (not used but common in adjacent tooling)
 node_modules/
+
+# Linear schema artifacts (generated, not committed)
 schema_introspection.json
 schema.graphql
+
+# Claude Code worktrees
 .claude/worktrees/
+
+# Docs build output
+docs/content/
