@@ -119,8 +119,14 @@ fn test_api_viewer_json_shape() {
         .expect("failed to run");
     let stdout = String::from_utf8_lossy(&out.stdout);
     // Should have raw data object, not wrapped in {"data": ...}
-    assert!(stdout.contains("\"viewer\""), "expected viewer key in output");
-    assert!(!stdout.contains("\"data\""), "output should not have GraphQL envelope");
+    assert!(
+        stdout.contains("\"viewer\""),
+        "expected viewer key in output"
+    );
+    assert!(
+        !stdout.contains("\"data\""),
+        "output should not have GraphQL envelope"
+    );
 }
 
 #[test]
