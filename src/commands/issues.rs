@@ -277,8 +277,7 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
                             .iter()
                             .map(|t| format!("{} ({})", t.name, t.key))
                             .collect();
-                        let idx =
-                            crate::output::interactive::fuzzy_select("Select team", &items)?;
+                        let idx = crate::output::interactive::fuzzy_select("Select team", &items)?;
                         Some(teams[idx].key.clone())
                     }
                     None => None,
@@ -936,9 +935,7 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
                     .get("team")
                     .and_then(|t| t.get("key"))
                     .and_then(|v| v.as_str())
-                    .ok_or_else(|| {
-                        anyhow::anyhow!("Could not determine team for {identifier}")
-                    })?;
+                    .ok_or_else(|| anyhow::anyhow!("Could not determine team for {identifier}"))?;
                 let state_id = client.get_state_id(team_key, status_name).await?;
                 let update_query = r#"
                     mutation($id: String!, $input: IssueUpdateInput!) {
@@ -1001,10 +998,7 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
                 .get("title")
                 .and_then(|v| v.as_str())
                 .unwrap_or("Untitled");
-            let url = issue
-                .get("url")
-                .and_then(|v| v.as_str())
-                .unwrap_or("");
+            let url = issue.get("url").and_then(|v| v.as_str()).unwrap_or("");
 
             let pr_title = format!("{}: {}", ident, title);
             let pr_body = format!("Resolves {}", url);

@@ -114,11 +114,7 @@ pub async fn execute(
                     .unwrap_or("");
                 let ws = workspace
                     .map(|s| s.to_string())
-                    .or_else(|| {
-                        crate::config::load()
-                            .ok()
-                            .and_then(|c| c.default_workspace)
-                    })
+                    .or_else(|| crate::config::load().ok().and_then(|c| c.default_workspace))
                     .unwrap_or_else(|| "env".to_string());
                 println!("  {} ({}) — workspace: {}", name, email, ws);
             }

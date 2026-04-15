@@ -4,6 +4,23 @@ All notable changes to linear-cli will be documented in this file.
 
 Versioning follows [CalVer](https://calver.org/) with format `YYYY.MM.PATCH`.
 
+## [2026.4.16] — 2026-04-14
+
+### Added
+- `lin issues list --all-teams` — query issues across all teams
+- `lin issues list --created-after <DATE>` / `--updated-after <DATE>` — date filters
+- `lin issues create --description-file <PATH>` — read description from a file
+- `lin issues update --description-file <PATH>` — update description from a file
+- `lin issues comment --body-file <PATH>` — read comment body from a file
+- `lin issues start <ID>` — create/switch to the git branch Linear suggests for an issue
+- `lin issues pr <ID>` — create a GitHub PR linked to an issue (requires `gh`)
+- `lin auth login/list/default/whoami` — multi-workspace authentication
+- `--workspace <NAME>` global flag — override the default workspace for a single command
+
+### Changed
+- Config format now supports named workspaces; legacy `[auth]` format auto-migrates
+- `issues comment` body is now optional when using `--body-file`
+
 ## [2026.4.14] — 2026-04-14
 
 ### Added

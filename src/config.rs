@@ -54,17 +54,15 @@ pub fn load() -> anyhow::Result<Config> {
     let mut config: Config = toml::from_str(&contents)?;
 
     // Migrate legacy [auth] section
-    if let Some(legacy) = config.auth.take() {
-        if let Some(key) = legacy.api_key.filter(|k| !k.is_empty()) {
-            if config.workspaces.is_empty() {
-                config.workspaces.insert(
-                    "default".to_string(),
-                    WorkspaceConfig { api_key: key },
-                );
-                config.default_workspace = Some("default".to_string());
-                let _ = save(&config);
-            }
-        }
+    if let Some(legacy) = config.auth.take()
+        && let Some(key) = legacy.api_key.filter(|k| !k.is_empty())
+        && config.workspaces.is_empty()
+    {
+        config
+            .workspaces
+            .insert("default".to_string(), WorkspaceConfig { api_key: key });
+        config.default_workspace = Some("default".to_string());
+        let _ = save(&config);
     }
 
     Ok(config)
@@ -88,10 +86,7 @@ pub fn get_workspace_key(workspace: Option<&str>) -> Option<String> {
     let ws_name = workspace
         .map(|s| s.to_string())
         .or(config.default_workspace)?;
-    config
-        .workspaces
-        .get(&ws_name)
-        .map(|ws| ws.api_key.clone())
+    config.workspaces.get(&ws_name).map(|ws| ws.api_key.clone())
 }
 
 /// Read the API key from the config file (default workspace). Backwards compat.
@@ -175,10 +170,9 @@ api_key = "lin_api_legacy"
         let mut config: Config = toml::from_str(legacy_toml).unwrap();
         if let Some(legacy) = config.auth.take() {
             if let Some(key) = legacy.api_key {
-                config.workspaces.insert(
-                    "default".to_string(),
-                    WorkspaceConfig { api_key: key },
-                );
+                config
+                    .workspaces
+                    .insert("default".to_string(), WorkspaceConfig { api_key: key });
                 config.default_workspace = Some("default".to_string());
             }
         }

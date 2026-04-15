@@ -68,8 +68,16 @@ lin config set-key   # interactive prompt
 | Add issue to specific cycle | `lin cycles add ENG-123 --cycle <id> --json` |
 | List projects | `lin projects list --json` |
 | Add team to project | `lin projects update "My Project" --add-team ENG --json` |
+| List issues across all teams | `lin issues list --all-teams --json` |
+| Issues updated recently | `lin issues list --updated-after 2026-04-01 --json` |
+| Start working on an issue | `lin issues start ENG-123 --status "In Progress"` |
+| Create PR from issue | `lin issues pr ENG-123 --draft` |
+| Create from markdown file | `lin issues create --team ENG --title "..." --description-file spec.md --json` |
 | My info / verify auth | `lin me --json` |
 | List teams | `lin teams list --json` |
+| Add workspace | `lin auth login` |
+| Switch workspace | `lin auth default <name>` |
+| Check auth | `lin auth whoami --json` |
 | Raw GraphQL query | `lin api '{ viewer { id } }' --json` |
 | Raw GraphQL with variables | `lin api '...' --variables '{"id": "abc"}' --json` |
 

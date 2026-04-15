@@ -12,10 +12,13 @@ lin issues get <IDENTIFIER>
 
 lin issues list
   --team <TEAM>        Team key or name
+  --all-teams            Query across all teams (conflicts with --team)
   --state <STATE>      Workflow state name (alias: --status)
   --assignee <NAME>    Filter by assignee name
   --priority <1-4>     1=Urgent 2=High 3=Medium 4=Low
   --label <NAME>       Label name (repeatable for multiple)
+  --created-after <DATE> Only issues created on or after this date (YYYY-MM-DD)
+  --updated-after <DATE> Only issues updated on or after this date (YYYY-MM-DD)
   --limit <N>          Max results [default: 50]
   --json
 
@@ -27,6 +30,7 @@ lin issues create
   --team <TEAM>        REQUIRED. Team key or name
   --title <TITLE>      REQUIRED. Issue title
   --description <TEXT> Body text
+  --description-file <PATH>  Read description from a file (conflicts with --description)
   --assignee <NAME>    Assignee display name
   --priority <1-4>     1=Urgent 2=High 3=Medium 4=Low
   --estimate <N>       Story points
@@ -48,10 +52,11 @@ lin issues update <IDENTIFIER>
   --label <NAME>       Set label
   --milestone <NAME>   Assign to milestone
   --team <TEAM>        Move issue to a different team (key or name)
+  --description-file <PATH>  Read description from a file
   --json
 
-lin issues comment <IDENTIFIER>
-  --body <TEXT>        REQUIRED. Comment body
+lin issues comment <IDENTIFIER> [BODY]
+  --body-file <PATH>   Read body from a file
   --json
 
 lin issues archive <IDENTIFIER>
@@ -60,6 +65,15 @@ lin issues delete <IDENTIFIER>
 lin issues subscribe <IDENTIFIER>
 lin issues unsubscribe <IDENTIFIER>
 lin issues branch <BRANCH_NAME>    # find issue by git branch name
+
+lin issues start <IDENTIFIER>
+  --status <STATUS>      Update issue status after branching
+  --print-only           Just print the branch name
+  --json
+
+lin issues pr <IDENTIFIER>
+  --draft                Create as draft PR
+  --base <BRANCH>        Base branch
 ```
 
 ---
@@ -294,6 +308,17 @@ lin attachments list <ISSUE_ID> --limit <N> --json
 lin attachments create <ISSUE_ID> --title <TITLE> --url <URL> --json
 lin attachments link-url <ISSUE_ID> --url <URL> --json
 lin attachments delete <ID>
+```
+
+---
+
+## Auth (Workspaces)
+
+```
+lin auth login             # interactive: add workspace name + API key
+lin auth list              # list configured workspaces (* = default)
+lin auth default <NAME>    # set default workspace
+lin auth whoami            # show current user and workspace
 ```
 
 ---

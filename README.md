@@ -60,6 +60,10 @@ lin projects list                                       # List projects
 lin projects update "My Project" --add-team ENG         # Add team to project
 lin cycles add ENG-123 --cycle <id>                     # Add issue to specific cycle
 lin teams list                                          # List teams
+lin issues start ENG-123                                # Create branch from issue
+lin issues pr ENG-123 --draft                           # Create draft PR from issue
+lin issues list --all-teams --updated-after 2026-04-01  # Cross-team date filter
+lin auth login                                          # Add a workspace
 lin api '{ viewer { id displayName } }'                 # Raw GraphQL query
 ```
 
@@ -69,13 +73,15 @@ lin api '{ viewer { id displayName } }'                 # Raw GraphQL query
 |------|-------------|
 | `--json` | Output raw JSON for scripting |
 | `--debug` | Print GraphQL queries/responses to stderr |
+| `--workspace <NAME>` | Use a specific workspace |
 | `--version` | Show version |
 
 ## Commands
 
 | Group | Description |
 |-------|-------------|
-| `issues` | List, create, update, search, comment, archive, branch lookup |
+| `auth` | Manage workspaces and authentication |
+| `issues` | List, create, update, search, comment, start, pr, archive, branch lookup |
 | `projects` | List, create, update, search, archive, delete projects |
 | `cycles` | List, create, manage, archive cycles and cycle issues |
 | `initiatives` | Manage initiatives, status updates, link projects |
