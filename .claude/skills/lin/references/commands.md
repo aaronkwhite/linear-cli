@@ -315,7 +315,9 @@ lin attachments delete <ID>
 ## Auth (Workspaces)
 
 ```
-lin auth login             # interactive: add workspace name + API key
+lin auth login                       # interactive: add workspace name + API key
+  --name <NAME>                      # workspace name (for scripting)
+  --key <KEY>                        # API key (for scripting)
 lin auth list              # list configured workspaces (* = default)
 lin auth default <NAME>    # set default workspace
 lin auth whoami            # show current user and workspace

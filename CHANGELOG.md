@@ -20,6 +20,9 @@ Versioning follows [CalVer](https://calver.org/) with format `YYYY.MM.PATCH`.
 ### Changed
 - Config format now supports named workspaces; legacy `[auth]` format auto-migrates
 - `issues comment` body is now optional when using `--body-file`
+- Explicit `--workspace` flag now takes priority over `LINEAR_API_KEY` env var
+- `lin auth login` supports `--name`/`--key` flags for non-interactive (agent/CI) use
+- Date filter flags (`--created-after`, `--updated-after`) validate YYYY-MM-DD format before API call
 
 ## [2026.4.14] — 2026-04-14
 

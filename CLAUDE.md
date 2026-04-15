@@ -17,7 +17,7 @@ Tests in `tests/query_validation.rs` validate all embedded GraphQL queries again
 
 ```
 src/
-  main.rs           # CLI entry, global --json / --debug flags
+  main.rs           # CLI entry, global --json / --debug / --workspace flags
   client/mod.rs     # LinearClient: HTTP, auth, retry, cache
   client/cache.rs   # In-memory cache for teams/states/users
   commands/         # One file per noun (issues, projects, teams, ...)
@@ -26,7 +26,7 @@ src/
   output/table.rs   # ASCII table printer
   output/interactive.rs  # fuzzy-select prompts (skipped when non-interactive)
   error.rs          # LinearError enum
-  config.rs         # ~/.config/lin/config.toml
+  config.rs         # ~/.config/lin/config.toml (multi-workspace support)
 schemas/
   linear.graphql    # Full Linear schema snapshot — used for query validation
 ```
@@ -44,7 +44,7 @@ schemas/
 - Direct lookup fields (`team(id: $id)`, `issue(id: $id)`) → `String!`
 - Linear accepts both UUIDs and identifiers (e.g. `ENG-123`) for `String!` lookup fields
 
-**API key resolution order:** `LINEAR_API_KEY` env var → `~/.config/lin/config.toml` → `.env` / `.env.local` in cwd or parents.
+**API key resolution order:** Explicit `--workspace <name>` flag → `LINEAR_API_KEY` env var → config file default workspace → `.env` / `.env.local` in cwd or parents.
 
 ## Adding a Command
 
