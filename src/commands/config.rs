@@ -18,7 +18,12 @@ pub enum ConfigCommand {
     Path,
 }
 
-pub async fn execute(args: &ConfigArgs, json: bool, _debug: bool) -> anyhow::Result<()> {
+pub async fn execute(
+    args: &ConfigArgs,
+    json: bool,
+    _debug: bool,
+    _workspace: Option<&str>,
+) -> anyhow::Result<()> {
     match &args.command {
         ConfigCommand::SetToken => set_token(json),
         ConfigCommand::GetToken => get_token(json),

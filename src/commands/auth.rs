@@ -9,8 +9,15 @@ pub struct AuthArgs {
 
 #[derive(Subcommand, Debug)]
 pub enum AuthCommand {
-    /// Add a workspace (prompts for name and API key)
-    Login,
+    /// Add a workspace (interactive, or use --name/--key for scripting)
+    Login {
+        /// Workspace name (required in non-interactive mode)
+        #[arg(long)]
+        name: Option<String>,
+        /// API key (required in non-interactive mode)
+        #[arg(long)]
+        key: Option<String>,
+    },
     /// List configured workspaces
     List,
     /// Set the default workspace
@@ -29,13 +36,27 @@ pub async fn execute(
     workspace: Option<&str>,
 ) -> anyhow::Result<()> {
     match &args.command {
-        AuthCommand::Login => {
-            let name: String = Input::with_theme(&ColorfulTheme::default())
-                .with_prompt("Workspace name")
-                .interact_text()?;
-            let key = Password::with_theme(&ColorfulTheme::default())
-                .with_prompt("Linear API key")
-                .interact()?;
+        AuthCommand::Login {
+            name: arg_name,
+            key: arg_key,
+        } => {
+            let (name, key) = match (arg_name, arg_key) {
+                (Some(n), Some(k)) => (n.clone(), k.clone()),
+                _ if crate::output::interactive::is_interactive() => {
+                    let n: String = Input::with_theme(&ColorfulTheme::default())
+                        .with_prompt("Workspace name")
+                        .interact_text()?;
+                    let k = Password::with_theme(&ColorfulTheme::default())
+                        .with_prompt("Linear API key")
+                        .interact()?;
+                    (n, k)
+                }
+                _ => {
+                    anyhow::bail!(
+                        "Non-interactive mode: provide --name and --key (e.g., lin auth login --name myco --key lin_api_...)"
+                    );
+                }
+            };
 
             if name.is_empty() || key.is_empty() {
                 anyhow::bail!("Workspace name and API key cannot be empty");

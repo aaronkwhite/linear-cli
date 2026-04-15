@@ -83,8 +83,13 @@ pub enum LabelsCommand {
     },
 }
 
-pub async fn execute(args: &LabelsArgs, json: bool, debug: bool) -> anyhow::Result<()> {
-    let client = LinearClient::new(None, debug, None)?;
+pub async fn execute(
+    args: &LabelsArgs,
+    json: bool,
+    debug: bool,
+    workspace: Option<&str>,
+) -> anyhow::Result<()> {
+    let client = LinearClient::new(None, debug, workspace)?;
 
     match &args.command {
         LabelsCommand::List { team } => {

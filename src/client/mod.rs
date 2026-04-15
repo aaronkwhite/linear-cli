@@ -44,15 +44,22 @@ impl LinearClient {
     }
 
     fn resolve_api_key(workspace: Option<&str>) -> Result<String, LinearError> {
-        // 1. Environment variable (always wins)
+        // 1. Explicit --workspace flag takes priority over everything
+        if workspace.is_some()
+            && let Some(key) = crate::config::get_workspace_key(workspace)
+        {
+            return Ok(key);
+        }
+
+        // 2. Environment variable
         if let Ok(key) = env::var("LINEAR_API_KEY")
             && !key.is_empty()
         {
             return Ok(key);
         }
 
-        // 2. Config file (workspace-aware)
-        if let Some(key) = crate::config::get_workspace_key(workspace) {
+        // 3. Config file default workspace
+        if let Some(key) = crate::config::get_workspace_key(None) {
             return Ok(key);
         }
 

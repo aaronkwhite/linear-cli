@@ -149,8 +149,13 @@ async fn resolve_initiative_id(client: &LinearClient, name_or_id: &str) -> anyho
     anyhow::bail!("Initiative not found: {name_or_id}")
 }
 
-pub async fn execute(args: &InitiativesArgs, json: bool, debug: bool) -> anyhow::Result<()> {
-    let client = LinearClient::new(None, debug, None)?;
+pub async fn execute(
+    args: &InitiativesArgs,
+    json: bool,
+    debug: bool,
+    workspace: Option<&str>,
+) -> anyhow::Result<()> {
+    let client = LinearClient::new(None, debug, workspace)?;
 
     match &args.command {
         InitiativesCommand::List { status, limit } => {

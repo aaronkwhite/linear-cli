@@ -10,7 +10,12 @@ pub struct ApiArgs {
     pub variables: Option<String>,
 }
 
-pub async fn execute(args: &ApiArgs, _json: bool, debug: bool) -> anyhow::Result<()> {
+pub async fn execute(
+    args: &ApiArgs,
+    _json: bool,
+    debug: bool,
+    _workspace: Option<&str>,
+) -> anyhow::Result<()> {
     let variables = if let Some(vars_str) = &args.variables {
         let v: serde_json::Value = serde_json::from_str(vars_str)
             .map_err(|e| anyhow::anyhow!("Invalid JSON for --variables: {e}"))?;
