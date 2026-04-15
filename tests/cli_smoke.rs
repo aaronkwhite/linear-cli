@@ -577,3 +577,36 @@ fn test_api_variables_invalid_json() {
         .failure()
         .stderr(predicate::str::contains("Invalid JSON"));
 }
+
+// --- Bucket C: Query power ---
+
+#[test]
+fn test_issues_list_date_filters() {
+    lin()
+        .args(["issues", "list", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--created-after"))
+        .stdout(predicate::str::contains("--updated-after"));
+}
+
+#[test]
+fn test_issues_list_date_filters_parse() {
+    let output = lin()
+        .args([
+            "issues",
+            "list",
+            "--team",
+            "ENG",
+            "--created-after",
+            "2026-01-01",
+            "--updated-after",
+            "2026-03-01",
+            "--limit",
+            "1",
+        ])
+        .output()
+        .expect("failed to run command");
+    let code = output.status.code().unwrap_or(0);
+    assert_ne!(code, 2, "clap argument parsing failed");
+}

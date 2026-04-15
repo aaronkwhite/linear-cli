@@ -33,6 +33,12 @@ pub enum IssuesCommand {
         /// Filter by label name (can be specified multiple times)
         #[arg(long)]
         label: Vec<String>,
+        /// Only issues created on or after this date (YYYY-MM-DD)
+        #[arg(long)]
+        created_after: Option<String>,
+        /// Only issues updated on or after this date (YYYY-MM-DD)
+        #[arg(long)]
+        updated_after: Option<String>,
         /// Max results
         #[arg(long, default_value = "50")]
         limit: i32,
@@ -203,6 +209,8 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
             assignee,
             priority,
             label,
+            created_after,
+            updated_after,
             limit,
         } => {
             let query = r#"
@@ -262,6 +270,12 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
                     .map(|id| json!({ "id": { "eq": id } }))
                     .collect();
                 filter["labels"] = json!({ "some": { "or": or_filters } });
+            }
+            if let Some(date) = created_after {
+                filter["createdAt"] = json!({ "gte": date });
+            }
+            if let Some(date) = updated_after {
+                filter["updatedAt"] = json!({ "gte": date });
             }
 
             let variables = json!({
