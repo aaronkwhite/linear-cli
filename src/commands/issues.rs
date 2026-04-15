@@ -171,6 +171,28 @@ pub enum IssuesCommand {
         /// Issue identifier
         identifier: String,
     },
+    /// Start working on an issue: create/switch to its git branch
+    Start {
+        /// Issue identifier (e.g., ENG-123)
+        identifier: String,
+        /// Update issue status after branching
+        #[arg(long)]
+        status: Option<String>,
+        /// Just print the branch name, don't run git commands
+        #[arg(long)]
+        print_only: bool,
+    },
+    /// Create a GitHub PR linked to an issue (requires gh CLI)
+    Pr {
+        /// Issue identifier (e.g., ENG-123)
+        identifier: String,
+        /// Create as draft PR
+        #[arg(long)]
+        draft: bool,
+        /// Base branch for the PR
+        #[arg(long)]
+        base: Option<String>,
+    },
 }
 
 pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Result<()> {
@@ -843,6 +865,182 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
                         crate::output::color::red("ERROR")
                     );
                 }
+            }
+        }
+
+        IssuesCommand::Start {
+            identifier,
+            status,
+            print_only,
+        } => {
+            let query = r#"
+                query($id: String!) {
+                    issue(id: $id) {
+                        id identifier branchName
+                        team { key }
+                    }
+                }
+            "#;
+            let variables = json!({ "id": identifier });
+            let result = client.query_raw(query, Some(variables)).await?;
+            let issue = result
+                .pointer("/data/issue")
+                .ok_or_else(|| anyhow::anyhow!("Issue not found: {identifier}"))?;
+            let branch_name = issue
+                .get("branchName")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| anyhow::anyhow!("No branch name for issue {identifier}"))?;
+
+            if *print_only {
+                if json {
+                    crate::output::print_json(&serde_json::json!({
+                        "branch": branch_name,
+                        "identifier": identifier,
+                    }));
+                } else {
+                    println!("{branch_name}");
+                }
+                return Ok(());
+            }
+
+            // Check if we're in a git repo
+            let git_check = std::process::Command::new("git")
+                .args(["rev-parse", "--is-inside-work-tree"])
+                .output();
+            match git_check {
+                Ok(output) if output.status.success() => {}
+                _ => anyhow::bail!("Not a git repository"),
+            }
+
+            // Try to create and switch to the branch; if it exists, just switch
+            let checkout = std::process::Command::new("git")
+                .args(["checkout", "-b", branch_name])
+                .output()?;
+            if !checkout.status.success() {
+                let switch = std::process::Command::new("git")
+                    .args(["checkout", branch_name])
+                    .output()?;
+                if !switch.status.success() {
+                    let stderr = String::from_utf8_lossy(&switch.stderr);
+                    anyhow::bail!(
+                        "Failed to checkout branch '{}': {}",
+                        branch_name,
+                        stderr.trim()
+                    );
+                }
+            }
+
+            // Optionally update status
+            if let Some(status_name) = status {
+                let team_key = issue
+                    .get("team")
+                    .and_then(|t| t.get("key"))
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| {
+                        anyhow::anyhow!("Could not determine team for {identifier}")
+                    })?;
+                let state_id = client.get_state_id(team_key, status_name).await?;
+                let update_query = r#"
+                    mutation($id: String!, $input: IssueUpdateInput!) {
+                        issueUpdate(id: $id, input: $input) { success }
+                    }
+                "#;
+                client
+                    .query_raw(
+                        update_query,
+                        Some(json!({ "id": identifier, "input": { "stateId": state_id } })),
+                    )
+                    .await?;
+            }
+
+            if json {
+                crate::output::print_json(&serde_json::json!({
+                    "branch": branch_name,
+                    "identifier": identifier,
+                }));
+            } else {
+                println!(
+                    "  {} Switched to branch {}",
+                    crate::output::color::green("OK"),
+                    crate::output::color::bold(branch_name),
+                );
+            }
+        }
+
+        IssuesCommand::Pr {
+            identifier,
+            draft,
+            base,
+        } => {
+            // Check gh is available
+            let gh_check = std::process::Command::new("gh")
+                .args(["--version"])
+                .output();
+            match gh_check {
+                Ok(output) if output.status.success() => {}
+                _ => anyhow::bail!("gh CLI required for pr command (https://cli.github.com)"),
+            }
+
+            let query = r#"
+                query($id: String!) {
+                    issue(id: $id) {
+                        identifier title url
+                    }
+                }
+            "#;
+            let variables = json!({ "id": identifier });
+            let result = client.query_raw(query, Some(variables)).await?;
+            let issue = result
+                .pointer("/data/issue")
+                .ok_or_else(|| anyhow::anyhow!("Issue not found: {identifier}"))?;
+            let ident = issue
+                .get("identifier")
+                .and_then(|v| v.as_str())
+                .unwrap_or(identifier);
+            let title = issue
+                .get("title")
+                .and_then(|v| v.as_str())
+                .unwrap_or("Untitled");
+            let url = issue
+                .get("url")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
+
+            let pr_title = format!("{}: {}", ident, title);
+            let pr_body = format!("Resolves {}", url);
+
+            let mut gh_args = vec![
+                "pr".to_string(),
+                "create".to_string(),
+                "--title".to_string(),
+                pr_title.clone(),
+                "--body".to_string(),
+                pr_body,
+            ];
+            if *draft {
+                gh_args.push("--draft".to_string());
+            }
+            if let Some(base_branch) = base {
+                gh_args.push("--base".to_string());
+                gh_args.push(base_branch.clone());
+            }
+
+            let arg_refs: Vec<&str> = gh_args.iter().map(|s| s.as_str()).collect();
+            let output = std::process::Command::new("gh")
+                .args(&arg_refs)
+                .stdout(std::process::Stdio::inherit())
+                .stderr(std::process::Stdio::inherit())
+                .output()?;
+
+            if !output.status.success() {
+                anyhow::bail!("gh pr create failed");
+            }
+
+            if json {
+                crate::output::print_json(&serde_json::json!({
+                    "pr_title": pr_title,
+                    "identifier": ident,
+                }));
             }
         }
     }

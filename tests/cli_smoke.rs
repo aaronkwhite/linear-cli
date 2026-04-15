@@ -675,3 +675,37 @@ fn test_issues_comment_body_file_flag() {
         .success()
         .stdout(predicate::str::contains("--body-file"));
 }
+
+// --- Bucket A: Developer workflow ---
+
+#[test]
+fn test_issues_start_help() {
+    lin()
+        .args(["issues", "start", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("branch"))
+        .stdout(predicate::str::contains("--status"))
+        .stdout(predicate::str::contains("--print-only"));
+}
+
+#[test]
+fn test_issues_start_missing_identifier() {
+    lin().args(["issues", "start"]).assert().failure();
+}
+
+#[test]
+fn test_issues_pr_help() {
+    lin()
+        .args(["issues", "pr", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("GitHub"))
+        .stdout(predicate::str::contains("--draft"))
+        .stdout(predicate::str::contains("--base"));
+}
+
+#[test]
+fn test_issues_pr_missing_identifier() {
+    lin().args(["issues", "pr"]).assert().failure();
+}
