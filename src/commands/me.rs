@@ -4,8 +4,13 @@ use clap::Args;
 #[derive(Args, Debug)]
 pub struct MeArgs {}
 
-pub async fn execute(_args: &MeArgs, json: bool, debug: bool) -> anyhow::Result<()> {
-    let client = LinearClient::new(None, debug)?;
+pub async fn execute(
+    _args: &MeArgs,
+    json: bool,
+    debug: bool,
+    workspace: Option<&str>,
+) -> anyhow::Result<()> {
+    let client = LinearClient::new(None, debug, workspace)?;
 
     let result = client
         .query_raw(

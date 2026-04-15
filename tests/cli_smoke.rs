@@ -577,3 +577,171 @@ fn test_api_variables_invalid_json() {
         .failure()
         .stderr(predicate::str::contains("Invalid JSON"));
 }
+
+// --- Bucket C: Query power ---
+
+#[test]
+fn test_issues_list_date_filters() {
+    lin()
+        .args(["issues", "list", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--created-after"))
+        .stdout(predicate::str::contains("--updated-after"));
+}
+
+#[test]
+fn test_issues_list_date_filters_parse() {
+    let output = lin()
+        .args([
+            "issues",
+            "list",
+            "--team",
+            "ENG",
+            "--created-after",
+            "2026-01-01",
+            "--updated-after",
+            "2026-03-01",
+            "--limit",
+            "1",
+        ])
+        .output()
+        .expect("failed to run command");
+    let code = output.status.code().unwrap_or(0);
+    assert_ne!(code, 2, "clap argument parsing failed");
+}
+
+#[test]
+fn test_issues_list_all_teams_flag() {
+    lin()
+        .args(["issues", "list", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--all-teams"));
+}
+
+#[test]
+fn test_issues_list_all_teams_conflicts_with_team() {
+    lin()
+        .args(["issues", "list", "--team", "ENG", "--all-teams"])
+        .assert()
+        .failure();
+}
+
+// --- Bucket D: Content input ---
+
+#[test]
+fn test_issues_create_description_file_flag() {
+    lin()
+        .args(["issues", "create", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--description-file"));
+}
+
+#[test]
+fn test_issues_create_description_conflict() {
+    lin()
+        .args([
+            "issues",
+            "create",
+            "--team",
+            "ENG",
+            "--title",
+            "Test",
+            "--description",
+            "inline",
+            "--description-file",
+            "file.md",
+        ])
+        .assert()
+        .failure();
+}
+
+#[test]
+fn test_issues_update_description_file_flag() {
+    lin()
+        .args(["issues", "update", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--description-file"));
+}
+
+#[test]
+fn test_issues_comment_body_file_flag() {
+    lin()
+        .args(["issues", "comment", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--body-file"));
+}
+
+// --- Bucket A: Developer workflow ---
+
+#[test]
+fn test_issues_start_help() {
+    lin()
+        .args(["issues", "start", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("branch"))
+        .stdout(predicate::str::contains("--status"))
+        .stdout(predicate::str::contains("--print-only"));
+}
+
+#[test]
+fn test_issues_start_missing_identifier() {
+    lin().args(["issues", "start"]).assert().failure();
+}
+
+#[test]
+fn test_issues_pr_help() {
+    lin()
+        .args(["issues", "pr", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("GitHub"))
+        .stdout(predicate::str::contains("--draft"))
+        .stdout(predicate::str::contains("--base"));
+}
+
+#[test]
+fn test_issues_pr_missing_identifier() {
+    lin().args(["issues", "pr"]).assert().failure();
+}
+
+// --- Bucket B: Multi-workspace ---
+
+#[test]
+fn test_auth_help() {
+    lin()
+        .args(["auth", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("login"))
+        .stdout(predicate::str::contains("list"))
+        .stdout(predicate::str::contains("default"))
+        .stdout(predicate::str::contains("whoami"));
+}
+
+#[test]
+fn test_auth_default_missing_name() {
+    lin().args(["auth", "default"]).assert().failure();
+}
+
+#[test]
+fn test_workspace_flag() {
+    lin()
+        .args(["--workspace", "myco", "me", "--help"])
+        .assert()
+        .success();
+}
+
+#[test]
+fn test_help_lists_auth() {
+    lin()
+        .arg("--help")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("auth"));
+}

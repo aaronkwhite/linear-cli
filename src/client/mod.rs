@@ -19,10 +19,14 @@ pub struct LinearClient {
 }
 
 impl LinearClient {
-    pub fn new(api_key: Option<String>, debug: bool) -> Result<Self, LinearError> {
+    pub fn new(
+        api_key: Option<String>,
+        debug: bool,
+        workspace: Option<&str>,
+    ) -> Result<Self, LinearError> {
         let api_key = match api_key {
             Some(key) => key,
-            None => Self::resolve_api_key()?,
+            None => Self::resolve_api_key(workspace)?,
         };
 
         let http = Client::builder()
@@ -39,16 +43,23 @@ impl LinearClient {
         })
     }
 
-    fn resolve_api_key() -> Result<String, LinearError> {
-        // 1. Environment variable
+    fn resolve_api_key(workspace: Option<&str>) -> Result<String, LinearError> {
+        // 1. Explicit --workspace flag takes priority over everything
+        if workspace.is_some()
+            && let Some(key) = crate::config::get_workspace_key(workspace)
+        {
+            return Ok(key);
+        }
+
+        // 2. Environment variable
         if let Ok(key) = env::var("LINEAR_API_KEY")
             && !key.is_empty()
         {
             return Ok(key);
         }
 
-        // 2. Config file (~/.config/lin/config.toml)
-        if let Some(key) = crate::config::get_api_key() {
+        // 3. Config file default workspace
+        if let Some(key) = crate::config::get_workspace_key(None) {
             return Ok(key);
         }
 
@@ -360,7 +371,7 @@ mod tests {
     #[test]
     fn test_resolve_api_key_from_env() {
         temp_env::with_var("LINEAR_API_KEY", Some("lin_api_test123"), || {
-            let key = LinearClient::resolve_api_key().unwrap();
+            let key = LinearClient::resolve_api_key(None).unwrap();
             assert_eq!(key, "lin_api_test123");
         });
     }
@@ -375,7 +386,7 @@ mod tests {
             return; // .env/.env.local present — key will be found, test not applicable
         }
         temp_env::with_var("LINEAR_API_KEY", Some(""), || {
-            let result = LinearClient::resolve_api_key();
+            let result = LinearClient::resolve_api_key(None);
             assert!(result.is_err());
         });
     }
@@ -386,7 +397,7 @@ mod tests {
             return; // .env/.env.local present — key will be found, test not applicable
         }
         temp_env::with_var_unset("LINEAR_API_KEY", || {
-            let result = LinearClient::resolve_api_key();
+            let result = LinearClient::resolve_api_key(None);
             assert!(result.is_err());
             let err = result.unwrap_err().to_string();
             assert!(err.contains("LINEAR_API_KEY not found"));
@@ -395,7 +406,7 @@ mod tests {
 
     #[test]
     fn test_new_with_explicit_key() {
-        let client = LinearClient::new(Some("lin_api_explicit".into()), false);
+        let client = LinearClient::new(Some("lin_api_explicit".into()), false, None);
         assert!(client.is_ok());
     }
 }

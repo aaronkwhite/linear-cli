@@ -138,8 +138,13 @@ async fn resolve_view_id(client: &LinearClient, id_or_name: &str) -> anyhow::Res
     }
 }
 
-pub async fn execute(args: &ViewsArgs, json: bool, debug: bool) -> anyhow::Result<()> {
-    let client = LinearClient::new(None, debug)?;
+pub async fn execute(
+    args: &ViewsArgs,
+    json: bool,
+    debug: bool,
+    workspace: Option<&str>,
+) -> anyhow::Result<()> {
+    let client = LinearClient::new(None, debug, workspace)?;
 
     match &args.command {
         ViewsCommand::List { team, limit } => {

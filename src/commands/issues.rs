@@ -3,6 +3,20 @@ use serde_json::json;
 
 use crate::client::LinearClient;
 
+fn validate_date(date: &str) -> anyhow::Result<()> {
+    // YYYY-MM-DD format check
+    let parts: Vec<&str> = date.split('-').collect();
+    if parts.len() != 3
+        || parts[0].len() != 4
+        || parts[1].len() != 2
+        || parts[2].len() != 2
+        || !parts.iter().all(|p| p.chars().all(|c| c.is_ascii_digit()))
+    {
+        anyhow::bail!("Invalid date format '{}': expected YYYY-MM-DD", date);
+    }
+    Ok(())
+}
+
 #[derive(Args, Debug)]
 pub struct IssuesArgs {
     #[command(subcommand)]
@@ -21,6 +35,9 @@ pub enum IssuesCommand {
         /// Filter by team key or name
         #[arg(long)]
         team: Option<String>,
+        /// Query across all teams (conflicts with --team)
+        #[arg(long, conflicts_with = "team")]
+        all_teams: bool,
         /// Filter by workflow state name
         #[arg(long, visible_alias = "status")]
         state: Option<String>,
@@ -33,6 +50,12 @@ pub enum IssuesCommand {
         /// Filter by label name (can be specified multiple times)
         #[arg(long)]
         label: Vec<String>,
+        /// Only issues created on or after this date (YYYY-MM-DD)
+        #[arg(long)]
+        created_after: Option<String>,
+        /// Only issues updated on or after this date (YYYY-MM-DD)
+        #[arg(long)]
+        updated_after: Option<String>,
         /// Max results
         #[arg(long, default_value = "50")]
         limit: i32,
@@ -56,6 +79,9 @@ pub enum IssuesCommand {
         /// Issue description
         #[arg(long)]
         description: Option<String>,
+        /// Read description from a file (conflicts with --description)
+        #[arg(long, conflicts_with = "description")]
+        description_file: Option<String>,
         /// Assignee name
         #[arg(long)]
         assignee: Option<String>,
@@ -115,13 +141,19 @@ pub enum IssuesCommand {
         /// Move issue to a different team (key or name)
         #[arg(long)]
         team: Option<String>,
+        /// Read description from a file
+        #[arg(long)]
+        description_file: Option<String>,
     },
     /// Add a comment to an issue
     Comment {
         /// Issue identifier
         identifier: String,
-        /// Comment body
-        body: String,
+        /// Comment body (omit if using --body-file)
+        body: Option<String>,
+        /// Read comment body from a file
+        #[arg(long)]
+        body_file: Option<String>,
     },
     /// Archive an issue
     Archive {
@@ -153,10 +185,37 @@ pub enum IssuesCommand {
         /// Issue identifier
         identifier: String,
     },
+    /// Start working on an issue: create/switch to its git branch
+    Start {
+        /// Issue identifier (e.g., ENG-123)
+        identifier: String,
+        /// Update issue status after branching
+        #[arg(long)]
+        status: Option<String>,
+        /// Just print the branch name, don't run git commands
+        #[arg(long)]
+        print_only: bool,
+    },
+    /// Create a GitHub PR linked to an issue (requires gh CLI)
+    Pr {
+        /// Issue identifier (e.g., ENG-123)
+        identifier: String,
+        /// Create as draft PR
+        #[arg(long)]
+        draft: bool,
+        /// Base branch for the PR
+        #[arg(long)]
+        base: Option<String>,
+    },
 }
 
-pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Result<()> {
-    let client = LinearClient::new(None, debug)?;
+pub async fn execute(
+    args: &IssuesArgs,
+    json: bool,
+    debug: bool,
+    workspace: Option<&str>,
+) -> anyhow::Result<()> {
+    let client = LinearClient::new(None, debug, workspace)?;
 
     match &args.command {
         IssuesCommand::Get { identifier } => {
@@ -199,10 +258,13 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
 
         IssuesCommand::List {
             team,
+            all_teams,
             state,
             assignee,
             priority,
             label,
+            created_after,
+            updated_after,
             limit,
         } => {
             let query = r#"
@@ -223,18 +285,22 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
 
             let mut filter = json!({});
 
-            let team_key = match team {
-                Some(t) => Some(t.clone()),
-                None if crate::output::interactive::is_interactive() => {
-                    let teams = client.get_teams().await?;
-                    let items: Vec<String> = teams
-                        .iter()
-                        .map(|t| format!("{} ({})", t.name, t.key))
-                        .collect();
-                    let idx = crate::output::interactive::fuzzy_select("Select team", &items)?;
-                    Some(teams[idx].key.clone())
+            let team_key = if *all_teams {
+                None
+            } else {
+                match team {
+                    Some(t) => Some(t.clone()),
+                    None if crate::output::interactive::is_interactive() => {
+                        let teams = client.get_teams().await?;
+                        let items: Vec<String> = teams
+                            .iter()
+                            .map(|t| format!("{} ({})", t.name, t.key))
+                            .collect();
+                        let idx = crate::output::interactive::fuzzy_select("Select team", &items)?;
+                        Some(teams[idx].key.clone())
+                    }
+                    None => None,
                 }
-                None => None,
             };
 
             if let Some(team_key) = &team_key {
@@ -262,6 +328,14 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
                     .map(|id| json!({ "id": { "eq": id } }))
                     .collect();
                 filter["labels"] = json!({ "some": { "or": or_filters } });
+            }
+            if let Some(date) = created_after {
+                validate_date(date)?;
+                filter["createdAt"] = json!({ "gte": date });
+            }
+            if let Some(date) = updated_after {
+                validate_date(date)?;
+                filter["updatedAt"] = json!({ "gte": date });
             }
 
             let variables = json!({
@@ -333,6 +407,7 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
             team,
             title,
             description,
+            description_file,
             assignee,
             priority,
             estimate,
@@ -362,7 +437,14 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
                 "title": title,
             });
 
-            if let Some(desc) = description {
+            let desc = match (description, description_file) {
+                (Some(d), _) => Some(d.clone()),
+                (_, Some(path)) => Some(std::fs::read_to_string(path).map_err(|e| {
+                    anyhow::anyhow!("Failed to read description file '{}': {}", path, e)
+                })?),
+                _ => None,
+            };
+            if let Some(desc) = desc {
                 input["description"] = json!(desc);
             }
             if let Some(assignee_name) = assignee {
@@ -438,6 +520,7 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
             label,
             milestone: _,
             team,
+            description_file,
         } => {
             let query = r#"
                 mutation($id: String!, $input: IssueUpdateInput!) {
@@ -511,6 +594,12 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
                 let team_id = client.get_team_id(team_name).await?;
                 input["teamId"] = json!(team_id);
             }
+            if let Some(path) = description_file {
+                let content = std::fs::read_to_string(path).map_err(|e| {
+                    anyhow::anyhow!("Failed to read description file '{}': {}", path, e)
+                })?;
+                input["description"] = json!(content);
+            }
 
             let variables = json!({
                 "id": identifier,
@@ -540,7 +629,21 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
             }
         }
 
-        IssuesCommand::Comment { identifier, body } => {
+        IssuesCommand::Comment {
+            identifier,
+            body,
+            body_file,
+        } => {
+            let comment_body = match (body, body_file) {
+                (Some(_), Some(_)) => {
+                    anyhow::bail!("Cannot use both a body argument and --body-file");
+                }
+                (Some(b), _) => b.clone(),
+                (_, Some(path)) => std::fs::read_to_string(path)
+                    .map_err(|e| anyhow::anyhow!("Failed to read body file '{}': {}", path, e))?,
+                (None, None) => anyhow::bail!("Provide a comment body or --body-file"),
+            };
+
             let query = r#"
                 mutation($input: CommentCreateInput!) {
                     commentCreate(input: $input) {
@@ -552,7 +655,7 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
             let variables = json!({
                 "input": {
                     "issueId": identifier,
-                    "body": body,
+                    "body": comment_body,
                 }
             });
             let result = client.query_raw(query, Some(variables)).await?;
@@ -785,6 +888,177 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
                         crate::output::color::red("ERROR")
                     );
                 }
+            }
+        }
+
+        IssuesCommand::Start {
+            identifier,
+            status,
+            print_only,
+        } => {
+            let query = r#"
+                query($id: String!) {
+                    issue(id: $id) {
+                        id identifier branchName
+                        team { key }
+                    }
+                }
+            "#;
+            let variables = json!({ "id": identifier });
+            let result = client.query_raw(query, Some(variables)).await?;
+            let issue = result
+                .pointer("/data/issue")
+                .ok_or_else(|| anyhow::anyhow!("Issue not found: {identifier}"))?;
+            let branch_name = issue
+                .get("branchName")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| anyhow::anyhow!("No branch name for issue {identifier}"))?;
+
+            if *print_only {
+                if json {
+                    crate::output::print_json(&serde_json::json!({
+                        "branch": branch_name,
+                        "identifier": identifier,
+                    }));
+                } else {
+                    println!("{branch_name}");
+                }
+                return Ok(());
+            }
+
+            // Check if we're in a git repo
+            let git_check = std::process::Command::new("git")
+                .args(["rev-parse", "--is-inside-work-tree"])
+                .output();
+            match git_check {
+                Ok(output) if output.status.success() => {}
+                _ => anyhow::bail!("Not a git repository"),
+            }
+
+            // Try to create and switch to the branch; if it exists, just switch
+            let checkout = std::process::Command::new("git")
+                .args(["checkout", "-b", branch_name])
+                .output()?;
+            if !checkout.status.success() {
+                let switch = std::process::Command::new("git")
+                    .args(["checkout", branch_name])
+                    .output()?;
+                if !switch.status.success() {
+                    let stderr = String::from_utf8_lossy(&switch.stderr);
+                    anyhow::bail!(
+                        "Failed to checkout branch '{}': {}",
+                        branch_name,
+                        stderr.trim()
+                    );
+                }
+            }
+
+            // Optionally update status
+            if let Some(status_name) = status {
+                let team_key = issue
+                    .get("team")
+                    .and_then(|t| t.get("key"))
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| anyhow::anyhow!("Could not determine team for {identifier}"))?;
+                let state_id = client.get_state_id(team_key, status_name).await?;
+                let update_query = r#"
+                    mutation($id: String!, $input: IssueUpdateInput!) {
+                        issueUpdate(id: $id, input: $input) { success }
+                    }
+                "#;
+                client
+                    .query_raw(
+                        update_query,
+                        Some(json!({ "id": identifier, "input": { "stateId": state_id } })),
+                    )
+                    .await?;
+            }
+
+            if json {
+                crate::output::print_json(&serde_json::json!({
+                    "branch": branch_name,
+                    "identifier": identifier,
+                }));
+            } else {
+                println!(
+                    "  {} Switched to branch {}",
+                    crate::output::color::green("OK"),
+                    crate::output::color::bold(branch_name),
+                );
+            }
+        }
+
+        IssuesCommand::Pr {
+            identifier,
+            draft,
+            base,
+        } => {
+            // Check gh is available
+            let gh_check = std::process::Command::new("gh")
+                .args(["--version"])
+                .output();
+            match gh_check {
+                Ok(output) if output.status.success() => {}
+                _ => anyhow::bail!("gh CLI required for pr command (https://cli.github.com)"),
+            }
+
+            let query = r#"
+                query($id: String!) {
+                    issue(id: $id) {
+                        identifier title url
+                    }
+                }
+            "#;
+            let variables = json!({ "id": identifier });
+            let result = client.query_raw(query, Some(variables)).await?;
+            let issue = result
+                .pointer("/data/issue")
+                .ok_or_else(|| anyhow::anyhow!("Issue not found: {identifier}"))?;
+            let ident = issue
+                .get("identifier")
+                .and_then(|v| v.as_str())
+                .unwrap_or(identifier);
+            let title = issue
+                .get("title")
+                .and_then(|v| v.as_str())
+                .unwrap_or("Untitled");
+            let url = issue.get("url").and_then(|v| v.as_str()).unwrap_or("");
+
+            let pr_title = format!("{}: {}", ident, title);
+            let pr_body = format!("Resolves {}", url);
+
+            let mut gh_args = vec![
+                "pr".to_string(),
+                "create".to_string(),
+                "--title".to_string(),
+                pr_title.clone(),
+                "--body".to_string(),
+                pr_body,
+            ];
+            if *draft {
+                gh_args.push("--draft".to_string());
+            }
+            if let Some(base_branch) = base {
+                gh_args.push("--base".to_string());
+                gh_args.push(base_branch.clone());
+            }
+
+            let arg_refs: Vec<&str> = gh_args.iter().map(|s| s.as_str()).collect();
+            let output = std::process::Command::new("gh")
+                .args(&arg_refs)
+                .stdout(std::process::Stdio::inherit())
+                .stderr(std::process::Stdio::inherit())
+                .output()?;
+
+            if !output.status.success() {
+                anyhow::bail!("gh pr create failed");
+            }
+
+            if json {
+                crate::output::print_json(&serde_json::json!({
+                    "pr_title": pr_title,
+                    "identifier": ident,
+                }));
             }
         }
     }

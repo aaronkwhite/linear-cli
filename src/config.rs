@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::PathBuf;
 
@@ -5,12 +6,26 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Config {
+    /// Default workspace name
+    pub default_workspace: Option<String>,
+
+    /// Named workspaces
     #[serde(default)]
-    pub auth: AuthConfig,
+    pub workspaces: BTreeMap<String, WorkspaceConfig>,
+
+    /// Legacy auth section (migrated on load)
+    #[serde(default, skip_serializing)]
+    pub auth: Option<LegacyAuth>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct WorkspaceConfig {
+    pub api_key: String,
+}
+
+/// Old format — only used for migration
 #[derive(Debug, Default, Serialize, Deserialize)]
-pub struct AuthConfig {
+pub struct LegacyAuth {
     pub api_key: Option<String>,
 }
 
@@ -24,7 +39,7 @@ pub fn config_path() -> Option<PathBuf> {
     config_dir().map(|d| d.join("config.toml"))
 }
 
-/// Load the config from disk. Returns default config if the file doesn't exist.
+/// Load config, auto-migrating legacy `[auth]` format to workspaces.
 pub fn load() -> anyhow::Result<Config> {
     let path = match config_path() {
         Some(p) => p,
@@ -36,11 +51,24 @@ pub fn load() -> anyhow::Result<Config> {
     }
 
     let contents = fs::read_to_string(&path)?;
-    let config: Config = toml::from_str(&contents)?;
+    let mut config: Config = toml::from_str(&contents)?;
+
+    // Migrate legacy [auth] section
+    if let Some(legacy) = config.auth.take()
+        && let Some(key) = legacy.api_key.filter(|k| !k.is_empty())
+        && config.workspaces.is_empty()
+    {
+        config
+            .workspaces
+            .insert("default".to_string(), WorkspaceConfig { api_key: key });
+        config.default_workspace = Some("default".to_string());
+        let _ = save(&config);
+    }
+
     Ok(config)
 }
 
-/// Save the config to disk, creating the directory if needed.
+/// Save the config to disk.
 pub fn save(config: &Config) -> anyhow::Result<()> {
     let dir =
         config_dir().ok_or_else(|| anyhow::anyhow!("Could not determine config directory"))?;
@@ -52,17 +80,55 @@ pub fn save(config: &Config) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Read the API key from the config file, if present.
-pub fn get_api_key() -> Option<String> {
+/// Get the API key for a specific workspace or the default.
+pub fn get_workspace_key(workspace: Option<&str>) -> Option<String> {
     let config = load().ok()?;
-    config.auth.api_key.filter(|k| !k.is_empty())
+    let ws_name = workspace
+        .map(|s| s.to_string())
+        .or(config.default_workspace)?;
+    config.workspaces.get(&ws_name).map(|ws| ws.api_key.clone())
 }
 
-/// Save an API key to the config file, preserving other settings.
-pub fn set_api_key(key: &str) -> anyhow::Result<()> {
+/// Read the API key from the config file (default workspace). Backwards compat.
+pub fn get_api_key() -> Option<String> {
+    get_workspace_key(None)
+}
+
+/// Save an API key as a named workspace.
+pub fn set_workspace_key(name: &str, key: &str) -> anyhow::Result<()> {
     let mut config = load().unwrap_or_default();
-    config.auth.api_key = Some(key.to_string());
+    config.workspaces.insert(
+        name.to_string(),
+        WorkspaceConfig {
+            api_key: key.to_string(),
+        },
+    );
+    if config.default_workspace.is_none() {
+        config.default_workspace = Some(name.to_string());
+    }
     save(&config)
+}
+
+/// Set the default workspace.
+pub fn set_default_workspace(name: &str) -> anyhow::Result<()> {
+    let mut config = load().unwrap_or_default();
+    if !config.workspaces.contains_key(name) {
+        anyhow::bail!("Workspace '{}' not found", name);
+    }
+    config.default_workspace = Some(name.to_string());
+    save(&config)
+}
+
+/// List all configured workspaces.
+pub fn list_workspaces() -> anyhow::Result<(Vec<String>, Option<String>)> {
+    let config = load().unwrap_or_default();
+    let names: Vec<String> = config.workspaces.keys().cloned().collect();
+    Ok((names, config.default_workspace))
+}
+
+/// Save an API key to the config file as "default" workspace. Backwards compat.
+pub fn set_api_key(key: &str) -> anyhow::Result<()> {
+    set_workspace_key("default", key)
 }
 
 #[cfg(test)]
@@ -72,24 +138,52 @@ mod tests {
     #[test]
     fn test_default_config_has_no_key() {
         let config = Config::default();
-        assert!(config.auth.api_key.is_none());
+        assert!(config.workspaces.is_empty());
+        assert!(config.default_workspace.is_none());
     }
 
     #[test]
     fn test_roundtrip_toml() {
         let mut config = Config::default();
-        config.auth.api_key = Some("lin_api_test123".to_string());
+        config.default_workspace = Some("myco".to_string());
+        config.workspaces.insert(
+            "myco".to_string(),
+            WorkspaceConfig {
+                api_key: "lin_api_test123".to_string(),
+            },
+        );
         let serialized = toml::to_string_pretty(&config).unwrap();
         let deserialized: Config = toml::from_str(&serialized).unwrap();
+        assert_eq!(deserialized.default_workspace.as_deref(), Some("myco"));
         assert_eq!(
-            deserialized.auth.api_key.as_deref(),
-            Some("lin_api_test123")
+            deserialized.workspaces.get("myco").unwrap().api_key,
+            "lin_api_test123"
+        );
+    }
+
+    #[test]
+    fn test_legacy_migration() {
+        let legacy_toml = r#"
+[auth]
+api_key = "lin_api_legacy"
+"#;
+        let mut config: Config = toml::from_str(legacy_toml).unwrap();
+        if let Some(legacy) = config.auth.take() {
+            if let Some(key) = legacy.api_key {
+                config
+                    .workspaces
+                    .insert("default".to_string(), WorkspaceConfig { api_key: key });
+                config.default_workspace = Some("default".to_string());
+            }
+        }
+        assert_eq!(
+            config.workspaces.get("default").unwrap().api_key,
+            "lin_api_legacy"
         );
     }
 
     #[test]
     fn test_config_path_exists() {
-        // config_path should return Some on any platform with a home dir
         let path = config_path();
         assert!(path.is_some());
         let p = path.unwrap();
