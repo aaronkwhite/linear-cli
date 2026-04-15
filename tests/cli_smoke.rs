@@ -610,3 +610,20 @@ fn test_issues_list_date_filters_parse() {
     let code = output.status.code().unwrap_or(0);
     assert_ne!(code, 2, "clap argument parsing failed");
 }
+
+#[test]
+fn test_issues_list_all_teams_flag() {
+    lin()
+        .args(["issues", "list", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--all-teams"));
+}
+
+#[test]
+fn test_issues_list_all_teams_conflicts_with_team() {
+    lin()
+        .args(["issues", "list", "--team", "ENG", "--all-teams"])
+        .assert()
+        .failure();
+}

@@ -21,6 +21,9 @@ pub enum IssuesCommand {
         /// Filter by team key or name
         #[arg(long)]
         team: Option<String>,
+        /// Query across all teams (conflicts with --team)
+        #[arg(long, conflicts_with = "team")]
+        all_teams: bool,
         /// Filter by workflow state name
         #[arg(long, visible_alias = "status")]
         state: Option<String>,
@@ -205,6 +208,7 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
 
         IssuesCommand::List {
             team,
+            all_teams,
             state,
             assignee,
             priority,
@@ -231,18 +235,23 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
 
             let mut filter = json!({});
 
-            let team_key = match team {
-                Some(t) => Some(t.clone()),
-                None if crate::output::interactive::is_interactive() => {
-                    let teams = client.get_teams().await?;
-                    let items: Vec<String> = teams
-                        .iter()
-                        .map(|t| format!("{} ({})", t.name, t.key))
-                        .collect();
-                    let idx = crate::output::interactive::fuzzy_select("Select team", &items)?;
-                    Some(teams[idx].key.clone())
+            let team_key = if *all_teams {
+                None
+            } else {
+                match team {
+                    Some(t) => Some(t.clone()),
+                    None if crate::output::interactive::is_interactive() => {
+                        let teams = client.get_teams().await?;
+                        let items: Vec<String> = teams
+                            .iter()
+                            .map(|t| format!("{} ({})", t.name, t.key))
+                            .collect();
+                        let idx =
+                            crate::output::interactive::fuzzy_select("Select team", &items)?;
+                        Some(teams[idx].key.clone())
+                    }
+                    None => None,
                 }
-                None => None,
             };
 
             if let Some(team_key) = &team_key {
