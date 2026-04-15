@@ -657,3 +657,21 @@ fn test_issues_create_description_conflict() {
         .assert()
         .failure();
 }
+
+#[test]
+fn test_issues_update_description_file_flag() {
+    lin()
+        .args(["issues", "update", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--description-file"));
+}
+
+#[test]
+fn test_issues_comment_body_file_flag() {
+    lin()
+        .args(["issues", "comment", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--body-file"));
+}

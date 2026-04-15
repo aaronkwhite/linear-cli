@@ -127,13 +127,19 @@ pub enum IssuesCommand {
         /// Move issue to a different team (key or name)
         #[arg(long)]
         team: Option<String>,
+        /// Read description from a file
+        #[arg(long)]
+        description_file: Option<String>,
     },
     /// Add a comment to an issue
     Comment {
         /// Issue identifier
         identifier: String,
-        /// Comment body
-        body: String,
+        /// Comment body (omit if using --body-file)
+        body: Option<String>,
+        /// Read comment body from a file
+        #[arg(long)]
+        body_file: Option<String>,
     },
     /// Archive an issue
     Archive {
@@ -472,6 +478,7 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
             label,
             milestone: _,
             team,
+            description_file,
         } => {
             let query = r#"
                 mutation($id: String!, $input: IssueUpdateInput!) {
@@ -545,6 +552,12 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
                 let team_id = client.get_team_id(team_name).await?;
                 input["teamId"] = json!(team_id);
             }
+            if let Some(path) = description_file {
+                let content = std::fs::read_to_string(path).map_err(|e| {
+                    anyhow::anyhow!("Failed to read description file '{}': {}", path, e)
+                })?;
+                input["description"] = json!(content);
+            }
 
             let variables = json!({
                 "id": identifier,
@@ -574,7 +587,18 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
             }
         }
 
-        IssuesCommand::Comment { identifier, body } => {
+        IssuesCommand::Comment {
+            identifier,
+            body,
+            body_file,
+        } => {
+            let comment_body = match (body, body_file) {
+                (Some(b), _) => b.clone(),
+                (_, Some(path)) => std::fs::read_to_string(path)
+                    .map_err(|e| anyhow::anyhow!("Failed to read body file '{}': {}", path, e))?,
+                (None, None) => anyhow::bail!("Provide a comment body or --body-file"),
+            };
+
             let query = r#"
                 mutation($input: CommentCreateInput!) {
                     commentCreate(input: $input) {
@@ -586,7 +610,7 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
             let variables = json!({
                 "input": {
                     "issueId": identifier,
-                    "body": body,
+                    "body": comment_body,
                 }
             });
             let result = client.query_raw(query, Some(variables)).await?;
