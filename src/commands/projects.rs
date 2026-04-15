@@ -109,7 +109,7 @@ pub enum ProjectsCommand {
 }
 
 pub async fn execute(args: &ProjectsArgs, json: bool, debug: bool) -> anyhow::Result<()> {
-    let client = LinearClient::new(None, debug)?;
+    let client = LinearClient::new(None, debug, None)?;
 
     match &args.command {
         ProjectsCommand::Get { name } => {

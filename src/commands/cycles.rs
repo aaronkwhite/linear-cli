@@ -84,7 +84,7 @@ pub enum CyclesCommand {
 }
 
 pub async fn execute(args: &CyclesArgs, json: bool, debug: bool) -> anyhow::Result<()> {
-    let client = LinearClient::new(None, debug)?;
+    let client = LinearClient::new(None, debug, None)?;
 
     match &args.command {
         CyclesCommand::List { team, r#type } => {

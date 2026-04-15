@@ -5,7 +5,7 @@ use clap::Args;
 pub struct MeArgs {}
 
 pub async fn execute(_args: &MeArgs, json: bool, debug: bool) -> anyhow::Result<()> {
-    let client = LinearClient::new(None, debug)?;
+    let client = LinearClient::new(None, debug, None)?;
 
     let result = client
         .query_raw(

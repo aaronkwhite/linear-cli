@@ -52,7 +52,7 @@ pub enum RelationsCommand {
 }
 
 pub async fn execute(args: &RelationsArgs, json: bool, debug: bool) -> anyhow::Result<()> {
-    let client = LinearClient::new(None, debug)?;
+    let client = LinearClient::new(None, debug, None)?;
 
     match &args.command {
         RelationsCommand::List { identifier } => {

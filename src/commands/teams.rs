@@ -40,7 +40,7 @@ pub enum TeamsCommand {
 }
 
 pub async fn execute(args: &TeamsArgs, json: bool, debug: bool) -> anyhow::Result<()> {
-    let client = LinearClient::new(None, debug)?;
+    let client = LinearClient::new(None, debug, None)?;
 
     match &args.command {
         TeamsCommand::List => {

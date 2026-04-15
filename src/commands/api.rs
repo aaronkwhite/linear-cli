@@ -19,7 +19,7 @@ pub async fn execute(args: &ApiArgs, _json: bool, debug: bool) -> anyhow::Result
         None
     };
 
-    let client = LinearClient::new(None, debug)?;
+    let client = LinearClient::new(None, debug, None)?;
     let result = client.query_raw(&args.query, variables).await?;
     crate::output::print_json(&result);
     Ok(())

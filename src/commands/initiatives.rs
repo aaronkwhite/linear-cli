@@ -150,7 +150,7 @@ async fn resolve_initiative_id(client: &LinearClient, name_or_id: &str) -> anyho
 }
 
 pub async fn execute(args: &InitiativesArgs, json: bool, debug: bool) -> anyhow::Result<()> {
-    let client = LinearClient::new(None, debug)?;
+    let client = LinearClient::new(None, debug, None)?;
 
     match &args.command {
         InitiativesCommand::List { status, limit } => {

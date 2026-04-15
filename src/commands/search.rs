@@ -12,7 +12,7 @@ pub struct SearchArgs {
 }
 
 pub async fn execute(args: &SearchArgs, json: bool, debug: bool) -> anyhow::Result<()> {
-    let client = LinearClient::new(None, debug)?;
+    let client = LinearClient::new(None, debug, None)?;
 
     // Search issues
     let issue_result = client

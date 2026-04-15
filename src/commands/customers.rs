@@ -92,7 +92,7 @@ async fn resolve_customer_id(client: &LinearClient, name: &str) -> anyhow::Resul
 }
 
 pub async fn execute(args: &CustomersArgs, json: bool, debug: bool) -> anyhow::Result<()> {
-    let client = LinearClient::new(None, debug)?;
+    let client = LinearClient::new(None, debug, None)?;
 
     match &args.command {
         CustomersCommand::List { limit } => {
