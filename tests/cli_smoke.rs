@@ -627,3 +627,33 @@ fn test_issues_list_all_teams_conflicts_with_team() {
         .assert()
         .failure();
 }
+
+// --- Bucket D: Content input ---
+
+#[test]
+fn test_issues_create_description_file_flag() {
+    lin()
+        .args(["issues", "create", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--description-file"));
+}
+
+#[test]
+fn test_issues_create_description_conflict() {
+    lin()
+        .args([
+            "issues",
+            "create",
+            "--team",
+            "ENG",
+            "--title",
+            "Test",
+            "--description",
+            "inline",
+            "--description-file",
+            "file.md",
+        ])
+        .assert()
+        .failure();
+}

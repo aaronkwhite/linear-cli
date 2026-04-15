@@ -65,6 +65,9 @@ pub enum IssuesCommand {
         /// Issue description
         #[arg(long)]
         description: Option<String>,
+        /// Read description from a file (conflicts with --description)
+        #[arg(long, conflicts_with = "description")]
+        description_file: Option<String>,
         /// Assignee name
         #[arg(long)]
         assignee: Option<String>,
@@ -356,6 +359,7 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
             team,
             title,
             description,
+            description_file,
             assignee,
             priority,
             estimate,
@@ -385,7 +389,14 @@ pub async fn execute(args: &IssuesArgs, json: bool, debug: bool) -> anyhow::Resu
                 "title": title,
             });
 
-            if let Some(desc) = description {
+            let desc = match (description, description_file) {
+                (Some(d), _) => Some(d.clone()),
+                (_, Some(path)) => Some(std::fs::read_to_string(path).map_err(|e| {
+                    anyhow::anyhow!("Failed to read description file '{}': {}", path, e)
+                })?),
+                _ => None,
+            };
+            if let Some(desc) = desc {
                 input["description"] = json!(desc);
             }
             if let Some(assignee_name) = assignee {
