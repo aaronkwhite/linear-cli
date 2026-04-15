@@ -16,6 +16,10 @@ pub struct Cli {
     #[arg(long, global = true)]
     pub debug: bool,
 
+    /// Use a specific workspace (overrides default)
+    #[arg(long, global = true)]
+    pub workspace: Option<String>,
+
     #[command(subcommand)]
     pub command: Commands,
 }
@@ -24,6 +28,8 @@ pub struct Cli {
 pub enum Commands {
     /// Execute a raw GraphQL query or mutation
     Api(crate::commands::api::ApiArgs),
+    /// Manage authentication and workspaces
+    Auth(crate::commands::auth::AuthArgs),
     /// Manage issues
     Issues(crate::commands::issues::IssuesArgs),
     /// Manage projects

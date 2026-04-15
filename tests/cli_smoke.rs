@@ -709,3 +709,39 @@ fn test_issues_pr_help() {
 fn test_issues_pr_missing_identifier() {
     lin().args(["issues", "pr"]).assert().failure();
 }
+
+// --- Bucket B: Multi-workspace ---
+
+#[test]
+fn test_auth_help() {
+    lin()
+        .args(["auth", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("login"))
+        .stdout(predicate::str::contains("list"))
+        .stdout(predicate::str::contains("default"))
+        .stdout(predicate::str::contains("whoami"));
+}
+
+#[test]
+fn test_auth_default_missing_name() {
+    lin().args(["auth", "default"]).assert().failure();
+}
+
+#[test]
+fn test_workspace_flag() {
+    lin()
+        .args(["--workspace", "myco", "me", "--help"])
+        .assert()
+        .success();
+}
+
+#[test]
+fn test_help_lists_auth() {
+    lin()
+        .arg("--help")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("auth"));
+}

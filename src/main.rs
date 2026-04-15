@@ -14,8 +14,11 @@ use cli::{Cli, Commands};
 async fn main() {
     let cli = Cli::parse();
 
+    let ws = cli.workspace.as_deref();
+
     let result = match &cli.command {
         Commands::Api(args) => commands::api::execute(args, cli.json, cli.debug).await,
+        Commands::Auth(args) => commands::auth::execute(args, cli.json, cli.debug, ws).await,
         Commands::Issues(args) => commands::issues::execute(args, cli.json, cli.debug).await,
         Commands::Projects(args) => commands::projects::execute(args, cli.json, cli.debug).await,
         Commands::Cycles(args) => commands::cycles::execute(args, cli.json, cli.debug).await,
