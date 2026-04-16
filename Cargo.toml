@@ -2,13 +2,13 @@
 name = "lincli"
 version = "2026.4.16"
 edition = "2024"
-description = "Linear CLI — manage issues, projects, cycles, and more from the terminal"
+description = "Fast, agent-friendly Linear CLI — manage issues, projects, cycles from the terminal"
 license = "MIT"
 repository = "https://github.com/aaronkwhite/linear-cli"
 homepage = "https://github.com/aaronkwhite/linear-cli"
 authors = ["Aaron K White"]
 readme = "README.md"
-keywords = ["cli", "linear", "graphql", "issue-tracking"]
+keywords = ["cli", "linear", "graphql", "issue-tracking", "project-management"]
 categories = ["command-line-utilities", "development-tools"]
 exclude = ["docs/superpowers/", ".github/"]
 
