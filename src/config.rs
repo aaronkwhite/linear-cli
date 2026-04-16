@@ -144,14 +144,16 @@ mod tests {
 
     #[test]
     fn test_roundtrip_toml() {
-        let mut config = Config::default();
-        config.default_workspace = Some("myco".to_string());
-        config.workspaces.insert(
-            "myco".to_string(),
-            WorkspaceConfig {
-                api_key: "lin_api_test123".to_string(),
-            },
-        );
+        let config = Config {
+            default_workspace: Some("myco".to_string()),
+            workspaces: BTreeMap::from([(
+                "myco".to_string(),
+                WorkspaceConfig {
+                    api_key: "lin_api_test123".to_string(),
+                },
+            )]),
+            ..Config::default()
+        };
         let serialized = toml::to_string_pretty(&config).unwrap();
         let deserialized: Config = toml::from_str(&serialized).unwrap();
         assert_eq!(deserialized.default_workspace.as_deref(), Some("myco"));
@@ -168,13 +170,13 @@ mod tests {
 api_key = "lin_api_legacy"
 "#;
         let mut config: Config = toml::from_str(legacy_toml).unwrap();
-        if let Some(legacy) = config.auth.take() {
-            if let Some(key) = legacy.api_key {
-                config
-                    .workspaces
-                    .insert("default".to_string(), WorkspaceConfig { api_key: key });
-                config.default_workspace = Some("default".to_string());
-            }
+        if let Some(legacy) = config.auth.take()
+            && let Some(key) = legacy.api_key
+        {
+            config
+                .workspaces
+                .insert("default".to_string(), WorkspaceConfig { api_key: key });
+            config.default_workspace = Some("default".to_string());
         }
         assert_eq!(
             config.workspaces.get("default").unwrap().api_key,

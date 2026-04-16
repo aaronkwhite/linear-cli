@@ -37,9 +37,13 @@ jobs:
             archive: lin-aarch64-macos.tar.gz
     steps:
       - uses: actions/checkout@v4
+      - name: Read toolchain from rust-toolchain.toml
+        id: toolchain
+        shell: bash
+        run: echo "channel=$(grep -E '^channel' rust-toolchain.toml | cut -d'"' -f2)" >> $GITHUB_OUTPUT
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: "1.94"
+          toolchain: ${{ steps.toolchain.outputs.channel }}
           targets: ${{ matrix.target }}
       - name: Install musl tools
         if: contains(matrix.target, 'musl')
@@ -93,9 +97,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Read toolchain from rust-toolchain.toml
+        id: toolchain
+        shell: bash
+        run: echo "channel=$(grep -E '^channel' rust-toolchain.toml | cut -d'"' -f2)" >> $GITHUB_OUTPUT
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: "1.94"
+          toolchain: ${{ steps.toolchain.outputs.channel }}
       - name: Publish
         run: cargo publish || true
         env:

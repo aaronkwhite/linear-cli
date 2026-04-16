@@ -18,9 +18,13 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
+      - name: Read toolchain from rust-toolchain.toml
+        id: toolchain
+        shell: bash
+        run: echo "channel=$(grep -E '^channel' rust-toolchain.toml | cut -d'"' -f2)" >> $GITHUB_OUTPUT
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: "1.94"
+          toolchain: ${{ steps.toolchain.outputs.channel }}
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
       - name: Format check

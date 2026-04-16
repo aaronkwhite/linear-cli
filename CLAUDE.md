@@ -9,7 +9,10 @@ cargo build                    # dev build
 cargo build --release          # release build
 cargo test                     # unit + query validation tests
 cargo run -- <command>         # run without installing
+./scripts/preflight.sh         # run before tagging a release — catches fmt/clippy/test/build issues
 ```
+
+**Rust toolchain** is pinned via `rust-toolchain.toml` (single source of truth). CI workflows read the channel from that file via a shell step, so version bumps only require editing one file.
 
 Tests in `tests/query_validation.rs` validate all embedded GraphQL queries against `schemas/linear.graphql`. Run them after any query change.
 
