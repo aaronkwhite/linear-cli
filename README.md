@@ -38,13 +38,23 @@ cargo install --path .
 Get your API key from **Linear Settings > API > Personal API keys**, then:
 
 ```bash
-lin config set-token
+lin auth login                        # interactive — saves as a named workspace
 ```
 
-Or set it via environment variable:
+Or set it directly:
 
 ```bash
-export LINEAR_API_KEY="lin_api_..."
+export LINEAR_API_KEY="lin_api_..."    # environment variable (simplest)
+lin config set-token                   # save to config file
+```
+
+**Multiple workspaces:**
+
+```bash
+lin auth login                        # add each workspace by name
+lin auth list                         # see configured workspaces
+lin auth default myco                 # switch default
+lin --workspace other-org issues list # one-off override
 ```
 
 ## Usage
