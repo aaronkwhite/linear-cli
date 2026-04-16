@@ -23,7 +23,8 @@ src/
   main.rs           # CLI entry, global --json / --debug / --workspace flags
   client/mod.rs     # LinearClient: HTTP, auth, retry, cache
   client/cache.rs   # In-memory cache for teams/states/users
-  commands/         # One file per noun (issues, projects, teams, ...)
+  commands/         # One file per noun (issues, projects, teams, auth, ...)
+  commands/auth.rs  # Multi-workspace: login, list, default, whoami
   output/mod.rs     # print_json() — all JSON output goes through here
   output/detail.rs  # Human-readable issue/project detail views
   output/table.rs   # ASCII table printer
@@ -51,11 +52,12 @@ schemas/
 
 ## Adding a Command
 
-1. Add a new file `src/commands/<noun>.rs` with a `pub async fn execute()` 
+1. Add a new file `src/commands/<noun>.rs` with `pub async fn execute(args, json, debug, workspace)` 
 2. Register in `src/commands/mod.rs`
-3. Add the subcommand to the Clap enum in `src/main.rs`
-4. Use `client.query_raw(query, Some(variables)).await?` for queries
-5. Branch on `json` flag: `if json { crate::output::print_json(&result) } else { /* human output */ }`
+3. Add the subcommand to the Clap enum in `src/cli.rs`
+4. Add dispatch in `src/main.rs`, forwarding `ws` (workspace)
+5. Use `LinearClient::new(None, debug, workspace)?` then `client.query_raw(query, Some(variables)).await?`
+6. Branch on `json` flag: `if json { crate::output::print_json(&result) } else { /* human output */ }`
 
 ## Schema Updates
 

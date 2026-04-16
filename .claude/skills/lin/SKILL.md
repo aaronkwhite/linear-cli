@@ -73,6 +73,8 @@ lin config set-key   # interactive prompt
 | Start working on an issue | `lin issues start ENG-123 --status "In Progress"` |
 | Create PR from issue | `lin issues pr ENG-123 --draft` |
 | Create from markdown file | `lin issues create --team ENG --title "..." --description-file spec.md --json` |
+| Comment from file | `lin issues comment ENG-123 --body-file notes.md --json` |
+| Use specific workspace | `lin --workspace myco issues list --all-teams --json` |
 | My info / verify auth | `lin me --json` |
 | List teams | `lin teams list --json` |
 | Add workspace | `lin auth login` |
