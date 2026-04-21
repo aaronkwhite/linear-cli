@@ -1,3 +1,4 @@
+mod analytics;
 mod cli;
 mod client;
 mod commands;
