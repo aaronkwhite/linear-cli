@@ -120,18 +120,11 @@ async fn flush_dir(dir: &Path, url: &str) {
 
     let response = client.post(url).json(&batch_payload).send().await;
 
-    if let Ok(resp) = response {
-        if resp.status().is_success() {
-            let _ = fs::write(&queue_path, "");
-        }
+    if let Ok(resp) = response
+        && resp.status().is_success()
+    {
+        let _ = fs::write(&queue_path, "");
     }
-}
-
-/// Get or create the anonymous install ID. Returns (id, was_first_run).
-/// Uses the default config dir.
-fn get_or_create_install_id() -> Option<(String, bool)> {
-    let dir = crate::config::config_dir()?;
-    get_or_create_install_id_in(&dir)
 }
 
 /// Get or create install ID in a specific directory. Testable.
@@ -147,6 +140,32 @@ fn get_or_create_install_id_in(dir: &Path) -> Option<(String, bool)> {
     fs::create_dir_all(dir).ok()?;
     fs::write(&path, &id).ok()?;
     Some((id, true))
+}
+
+/// Extract the top-level command name from a Commands variant.
+pub fn command_name(cmd: &crate::cli::Commands) -> &'static str {
+    use crate::cli::Commands;
+    match cmd {
+        Commands::Api(_) => "api",
+        Commands::Auth(_) => "auth",
+        Commands::Issues(_) => "issues",
+        Commands::Projects(_) => "projects",
+        Commands::Cycles(_) => "cycles",
+        Commands::Initiatives(_) => "initiatives",
+        Commands::Roadmap(_) => "roadmap",
+        Commands::Labels(_) => "labels",
+        Commands::Teams(_) => "teams",
+        Commands::Relations(_) => "relations",
+        Commands::Customers(_) => "customers",
+        Commands::Views(_) => "views",
+        Commands::Docs(_) => "docs",
+        Commands::Notifications(_) => "notifications",
+        Commands::Me(_) => "me",
+        Commands::Attachments(_) => "attachments",
+        Commands::Search(_) => "search",
+        Commands::Config(_) => "config",
+        Commands::Completions { .. } => "completions",
+    }
 }
 
 #[cfg(test)]
