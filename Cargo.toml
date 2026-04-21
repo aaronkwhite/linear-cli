@@ -33,6 +33,7 @@ dirs = "6"
 termimad = "0.30"
 toml = "0.8"
 dashmap = "6"
+uuid = { version = "1", features = ["v4"] }
 
 [build-dependencies]
 cynic-codegen = "3"
