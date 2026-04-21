@@ -1,4 +1,5 @@
 use std::fs;
+use std::io::Write;
 use std::path::Path;
 
 /// Write-only PostHog project token. Safe to embed — cannot read data, only send events.
@@ -18,6 +19,63 @@ pub fn is_enabled() -> bool {
         return false;
     }
     crate::config::is_analytics_enabled()
+}
+
+pub struct Event {
+    pub command: String,
+    pub flags: Vec<String>,
+    pub success: bool,
+    pub duration_ms: u64,
+}
+
+/// Track a command execution event. Appends to the local queue file.
+/// Prints first-run notice to stderr if this is the first invocation.
+pub fn track(event: &Event) {
+    if !is_enabled() {
+        return;
+    }
+    let Some(dir) = crate::config::config_dir() else {
+        return;
+    };
+    if track_to_dir(&dir, event) {
+        eprintln!("lin: anonymous usage stats enabled. Disable: lin config analytics off");
+    }
+}
+
+/// Write event to queue file in the given directory. Returns true if first run.
+fn track_to_dir(dir: &Path, event: &Event) -> bool {
+    let Some((install_id, first_run)) = get_or_create_install_id_in(dir) else {
+        return false;
+    };
+
+    let payload = serde_json::json!({
+        "event": "command_executed",
+        "distinct_id": install_id,
+        "properties": {
+            "command": event.command,
+            "flags": event.flags,
+            "success": event.success,
+            "duration_ms": event.duration_ms,
+            "version": env!("CARGO_PKG_VERSION"),
+            "os": std::env::consts::OS,
+            "arch": std::env::consts::ARCH,
+        }
+    });
+
+    let queue_path = dir.join("analytics_queue.jsonl");
+    let Ok(line) = serde_json::to_string(&payload) else {
+        return false;
+    };
+
+    let Ok(mut file) = fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&queue_path)
+    else {
+        return false;
+    };
+    let _ = writeln!(file, "{line}");
+    first_run
 }
 
 /// Get or create the anonymous install ID. Returns (id, was_first_run).
@@ -98,6 +156,62 @@ mod tests {
         let (id2, second) = get_or_create_install_id_in(&dir).unwrap();
         assert!(!second);
         assert_eq!(id1, id2);
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn test_track_writes_to_queue() {
+        let dir = std::env::temp_dir().join(format!("lin-test-{}", uuid::Uuid::new_v4()));
+        let _ = fs::create_dir_all(&dir);
+
+        let event = Event {
+            command: "issues list".to_string(),
+            flags: vec!["--json".to_string()],
+            success: true,
+            duration_ms: 150,
+        };
+
+        let first_run = track_to_dir(&dir, &event);
+        assert!(first_run);
+
+        let queue = fs::read_to_string(dir.join("analytics_queue.jsonl")).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(queue.trim()).unwrap();
+        assert_eq!(parsed["event"], "command_executed");
+        assert_eq!(parsed["properties"]["command"], "issues list");
+        assert_eq!(parsed["properties"]["flags"][0], "--json");
+        assert_eq!(parsed["properties"]["success"], true);
+        assert_eq!(parsed["properties"]["duration_ms"], 150);
+        assert!(parsed["properties"]["version"].is_string());
+        assert!(parsed["properties"]["os"].is_string());
+        assert!(parsed["properties"]["arch"].is_string());
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn test_track_appends_multiple_events() {
+        let dir = std::env::temp_dir().join(format!("lin-test-{}", uuid::Uuid::new_v4()));
+        let _ = fs::create_dir_all(&dir);
+
+        for i in 0..3 {
+            let event = Event {
+                command: format!("command {i}"),
+                flags: vec![],
+                success: true,
+                duration_ms: i * 100,
+            };
+            track_to_dir(&dir, &event);
+        }
+
+        let queue = fs::read_to_string(dir.join("analytics_queue.jsonl")).unwrap();
+        let lines: Vec<&str> = queue.trim().lines().collect();
+        assert_eq!(lines.len(), 3);
+
+        // All lines should be valid JSON with the same distinct_id
+        let first: serde_json::Value = serde_json::from_str(lines[0]).unwrap();
+        let third: serde_json::Value = serde_json::from_str(lines[2]).unwrap();
+        assert_eq!(first["distinct_id"], third["distinct_id"]);
 
         let _ = fs::remove_dir_all(&dir);
     }
