@@ -1,6 +1,7 @@
 use std::fs;
 use std::io::Write;
 use std::path::Path;
+use std::time::Duration;
 
 /// Write-only PostHog project token. Safe to embed — cannot read data, only send events.
 /// Alternative: use compile-time env var instead:
@@ -76,6 +77,54 @@ fn track_to_dir(dir: &Path, event: &Event) -> bool {
     };
     let _ = writeln!(file, "{line}");
     first_run
+}
+
+/// Flush pending analytics events to PostHog.
+pub async fn flush() {
+    let Some(dir) = crate::config::config_dir() else {
+        return;
+    };
+    flush_dir(&dir, POSTHOG_BATCH_URL).await;
+}
+
+/// Flush events from a specific directory to a specific URL. Testable.
+async fn flush_dir(dir: &Path, url: &str) {
+    let queue_path = dir.join("analytics_queue.jsonl");
+
+    let contents = match fs::read_to_string(&queue_path) {
+        Ok(c) if !c.trim().is_empty() => c,
+        _ => return,
+    };
+
+    let events: Vec<serde_json::Value> = contents
+        .lines()
+        .filter_map(|line| serde_json::from_str(line).ok())
+        .collect();
+
+    if events.is_empty() {
+        return;
+    }
+
+    let batch_payload = serde_json::json!({
+        "api_key": POSTHOG_TOKEN,
+        "batch": events,
+    });
+
+    let client = match reqwest::Client::builder()
+        .timeout(Duration::from_secs(5))
+        .build()
+    {
+        Ok(c) => c,
+        Err(_) => return,
+    };
+
+    let response = client.post(url).json(&batch_payload).send().await;
+
+    if let Ok(resp) = response {
+        if resp.status().is_success() {
+            let _ = fs::write(&queue_path, "");
+        }
+    }
 }
 
 /// Get or create the anonymous install ID. Returns (id, was_first_run).
@@ -212,6 +261,95 @@ mod tests {
         let first: serde_json::Value = serde_json::from_str(lines[0]).unwrap();
         let third: serde_json::Value = serde_json::from_str(lines[2]).unwrap();
         assert_eq!(first["distinct_id"], third["distinct_id"]);
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[tokio::test]
+    async fn test_flush_sends_and_clears_queue() {
+        use wiremock::{Mock, MockServer, ResponseTemplate, matchers};
+
+        let server = MockServer::start().await;
+        Mock::given(matchers::method("POST"))
+            .and(matchers::path("/batch/"))
+            .respond_with(ResponseTemplate::new(200))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let dir = std::env::temp_dir().join(format!("lin-test-{}", uuid::Uuid::new_v4()));
+        let _ = fs::create_dir_all(&dir);
+
+        // Write some events to the queue
+        let event = Event {
+            command: "issues list".to_string(),
+            flags: vec![],
+            success: true,
+            duration_ms: 100,
+        };
+        track_to_dir(&dir, &event);
+        track_to_dir(&dir, &event);
+
+        let queue_path = dir.join("analytics_queue.jsonl");
+        assert!(fs::read_to_string(&queue_path).unwrap().lines().count() == 2);
+
+        // Flush to the mock server
+        let url = format!("{}/batch/", server.uri());
+        flush_dir(&dir, &url).await;
+
+        // Queue should be empty after successful flush
+        let after = fs::read_to_string(&queue_path).unwrap();
+        assert!(after.is_empty());
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[tokio::test]
+    async fn test_flush_keeps_queue_on_failure() {
+        use wiremock::{Mock, MockServer, ResponseTemplate, matchers};
+
+        let server = MockServer::start().await;
+        Mock::given(matchers::method("POST"))
+            .and(matchers::path("/batch/"))
+            .respond_with(ResponseTemplate::new(500))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let dir = std::env::temp_dir().join(format!("lin-test-{}", uuid::Uuid::new_v4()));
+        let _ = fs::create_dir_all(&dir);
+
+        let event = Event {
+            command: "teams list".to_string(),
+            flags: vec![],
+            success: true,
+            duration_ms: 50,
+        };
+        track_to_dir(&dir, &event);
+
+        let queue_path = dir.join("analytics_queue.jsonl");
+        let before = fs::read_to_string(&queue_path).unwrap();
+
+        let url = format!("{}/batch/", server.uri());
+        flush_dir(&dir, &url).await;
+
+        // Queue should still have the event
+        let after = fs::read_to_string(&queue_path).unwrap();
+        assert_eq!(before, after);
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[tokio::test]
+    async fn test_flush_noop_on_empty_queue() {
+        let dir = std::env::temp_dir().join(format!("lin-test-{}", uuid::Uuid::new_v4()));
+        let _ = fs::create_dir_all(&dir);
+
+        // No queue file exists — flush should silently return
+        flush_dir(&dir, "http://localhost:1/batch/").await;
+
+        // No crash, no file created
+        assert!(!dir.join("analytics_queue.jsonl").exists());
 
         let _ = fs::remove_dir_all(&dir);
     }
