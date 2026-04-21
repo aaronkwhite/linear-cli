@@ -132,10 +132,7 @@ fn analytics_cmd(cmd: &AnalyticsCommand, json: bool) -> anyhow::Result<()> {
             if json {
                 crate::output::print_json(&serde_json::json!({ "analytics": false }));
             } else {
-                println!(
-                    "{} Analytics disabled",
-                    style("✓").green().bold()
-                );
+                println!("{} Analytics disabled", style("✓").green().bold());
             }
         }
         AnalyticsCommand::On => {
@@ -143,20 +140,14 @@ fn analytics_cmd(cmd: &AnalyticsCommand, json: bool) -> anyhow::Result<()> {
             if json {
                 crate::output::print_json(&serde_json::json!({ "analytics": true }));
             } else {
-                println!(
-                    "{} Analytics enabled",
-                    style("✓").green().bold()
-                );
+                println!("{} Analytics enabled", style("✓").green().bold());
             }
         }
         AnalyticsCommand::Status => {
             let enabled = crate::analytics::is_enabled();
             let do_not_track = std::env::var("DO_NOT_TRACK").ok().as_deref() == Some("1");
-            let config_value = crate::config::load()
-                .ok()
-                .and_then(|c| c.analytics_enabled);
-            let install_id_path = crate::config::config_dir()
-                .map(|d| d.join("analytics_id"));
+            let config_value = crate::config::load().ok().and_then(|c| c.analytics_enabled);
+            let install_id_path = crate::config::config_dir().map(|d| d.join("analytics_id"));
             let install_id = install_id_path
                 .and_then(|p| std::fs::read_to_string(p).ok())
                 .map(|s| s.trim().to_string())
@@ -173,7 +164,10 @@ fn analytics_cmd(cmd: &AnalyticsCommand, json: bool) -> anyhow::Result<()> {
                 let status = if enabled { "enabled" } else { "disabled" };
                 println!("Analytics: {}", style(status).bold());
                 if do_not_track {
-                    println!("  {} DO_NOT_TRACK=1 is set (overrides config)", style("!").yellow().bold());
+                    println!(
+                        "  {} DO_NOT_TRACK=1 is set (overrides config)",
+                        style("!").yellow().bold()
+                    );
                 }
                 if let Some(id) = install_id {
                     println!("  Install ID: {}", style(id).dim());
