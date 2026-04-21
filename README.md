@@ -106,7 +106,7 @@ lin api '{ viewer { id displayName } }'                 # Raw GraphQL query
 | `me` | Show authenticated user info |
 | `attachments` | Manage issue attachments and links |
 | `search` | Search across issues, projects, and documents |
-| `config` | Manage API key and CLI configuration |
+| `config` | Manage API key, CLI configuration, and analytics |
 | `completions` | Generate shell completions (bash, zsh, fish, powershell) |
 | `api` | Raw GraphQL passthrough — any query or mutation with auth injected |
 
@@ -181,6 +181,27 @@ A CLI pays only for what it uses. `lin issues list --team ENG --json` costs ~15 
 ### When MCP Still Makes Sense
 
 MCP works well for non-technical users in chat interfaces where CLI access isn't available, or for services that don't have a CLI wrapper. For developer tooling where you have shell access, CLI wins on every axis.
+
+## Analytics
+
+lin collects anonymous usage statistics to help improve the tool. This is **opt-out** — enabled by default with a first-run notice.
+
+**What's collected:** command name, flags used (not values), success/failure, execution time, lin version, OS/arch. Each install gets a random anonymous ID.
+
+**What's never collected:** API keys, issue content, workspace names, identifiers, query text, or any personal information.
+
+**Disable:**
+
+```bash
+lin config analytics off        # permanent
+DO_NOT_TRACK=1 lin ...          # per-invocation (community standard)
+```
+
+**Check status:**
+
+```bash
+lin config analytics status
+```
 
 ## Development
 

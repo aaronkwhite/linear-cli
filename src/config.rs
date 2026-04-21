@@ -16,6 +16,10 @@ pub struct Config {
     /// Legacy auth section (migrated on load)
     #[serde(default, skip_serializing)]
     pub auth: Option<LegacyAuth>,
+
+    /// Whether anonymous usage analytics are enabled (None = enabled, opt-out default)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub analytics_enabled: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -131,6 +135,21 @@ pub fn set_api_key(key: &str) -> anyhow::Result<()> {
     set_workspace_key("default", key)
 }
 
+/// Set analytics enabled/disabled in config.
+pub fn set_analytics_enabled(enabled: bool) -> anyhow::Result<()> {
+    let mut config = load().unwrap_or_default();
+    config.analytics_enabled = Some(enabled);
+    save(&config)
+}
+
+/// Check if analytics are enabled in config. Default is true (opt-out).
+pub fn is_analytics_enabled() -> bool {
+    load()
+        .ok()
+        .and_then(|c| c.analytics_enabled)
+        .unwrap_or(true)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -191,5 +210,35 @@ api_key = "lin_api_legacy"
         let p = path.unwrap();
         assert!(p.to_string_lossy().contains("lin"));
         assert!(p.to_string_lossy().ends_with("config.toml"));
+    }
+
+    #[test]
+    fn test_analytics_enabled_roundtrip() {
+        let config = Config {
+            analytics_enabled: Some(false),
+            ..Config::default()
+        };
+        let serialized = toml::to_string_pretty(&config).unwrap();
+        assert!(serialized.contains("analytics_enabled = false"));
+        let deserialized: Config = toml::from_str(&serialized).unwrap();
+        assert_eq!(deserialized.analytics_enabled, Some(false));
+    }
+
+    #[test]
+    fn test_analytics_enabled_default_is_none() {
+        let config = Config::default();
+        assert_eq!(config.analytics_enabled, None);
+    }
+
+    #[test]
+    fn test_analytics_enabled_missing_from_toml() {
+        let toml_str = r#"
+default_workspace = "myco"
+
+[workspaces.myco]
+api_key = "lin_api_test"
+"#;
+        let config: Config = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.analytics_enabled, None);
     }
 }

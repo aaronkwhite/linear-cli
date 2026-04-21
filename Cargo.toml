@@ -1,6 +1,6 @@
 [package]
 name = "lincli"
-version = "2026.4.16"
+version = "2026.4.21"
 edition = "2024"
 description = "Fast, agent-friendly Linear CLI — manage issues, projects, cycles from the terminal"
 license = "MIT"
@@ -33,6 +33,7 @@ dirs = "6"
 termimad = "0.30"
 toml = "0.8"
 dashmap = "6"
+uuid = { version = "1", features = ["v4"] }
 
 [build-dependencies]
 cynic-codegen = "3"
