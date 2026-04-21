@@ -16,6 +16,24 @@ pub enum ConfigCommand {
     GetToken,
     /// Print the config file path
     Path,
+    /// Manage anonymous usage analytics
+    Analytics(AnalyticsArgs),
+}
+
+#[derive(Args, Debug)]
+pub struct AnalyticsArgs {
+    #[command(subcommand)]
+    pub command: AnalyticsCommand,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum AnalyticsCommand {
+    /// Enable anonymous usage analytics
+    On,
+    /// Disable anonymous usage analytics
+    Off,
+    /// Show analytics status
+    Status,
 }
 
 pub async fn execute(
@@ -28,6 +46,7 @@ pub async fn execute(
         ConfigCommand::SetToken => set_token(json),
         ConfigCommand::GetToken => get_token(json),
         ConfigCommand::Path => print_path(json),
+        ConfigCommand::Analytics(args) => analytics_cmd(&args.command, json),
     }
 }
 
@@ -102,6 +121,65 @@ fn print_path(json: bool) -> anyhow::Result<()> {
         crate::output::print_json(&output);
     } else {
         println!("{path}");
+    }
+    Ok(())
+}
+
+fn analytics_cmd(cmd: &AnalyticsCommand, json: bool) -> anyhow::Result<()> {
+    match cmd {
+        AnalyticsCommand::Off => {
+            crate::config::set_analytics_enabled(false)?;
+            if json {
+                crate::output::print_json(&serde_json::json!({ "analytics": false }));
+            } else {
+                println!(
+                    "{} Analytics disabled",
+                    style("✓").green().bold()
+                );
+            }
+        }
+        AnalyticsCommand::On => {
+            crate::config::set_analytics_enabled(true)?;
+            if json {
+                crate::output::print_json(&serde_json::json!({ "analytics": true }));
+            } else {
+                println!(
+                    "{} Analytics enabled",
+                    style("✓").green().bold()
+                );
+            }
+        }
+        AnalyticsCommand::Status => {
+            let enabled = crate::analytics::is_enabled();
+            let do_not_track = std::env::var("DO_NOT_TRACK").ok().as_deref() == Some("1");
+            let config_value = crate::config::load()
+                .ok()
+                .and_then(|c| c.analytics_enabled);
+            let install_id_path = crate::config::config_dir()
+                .map(|d| d.join("analytics_id"));
+            let install_id = install_id_path
+                .and_then(|p| std::fs::read_to_string(p).ok())
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty());
+
+            if json {
+                crate::output::print_json(&serde_json::json!({
+                    "enabled": enabled,
+                    "config_value": config_value,
+                    "do_not_track_override": do_not_track,
+                    "install_id": install_id,
+                }));
+            } else {
+                let status = if enabled { "enabled" } else { "disabled" };
+                println!("Analytics: {}", style(status).bold());
+                if do_not_track {
+                    println!("  {} DO_NOT_TRACK=1 is set (overrides config)", style("!").yellow().bold());
+                }
+                if let Some(id) = install_id {
+                    println!("  Install ID: {}", style(id).dim());
+                }
+            }
+        }
     }
     Ok(())
 }
