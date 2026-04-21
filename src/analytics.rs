@@ -7,7 +7,7 @@ use std::time::Duration;
 /// Alternative: use compile-time env var instead:
 ///   const POSTHOG_TOKEN: &str = env!("LIN_POSTHOG_TOKEN");
 /// This requires LIN_POSTHOG_TOKEN set at build time (add to CI secrets).
-const POSTHOG_TOKEN: &str = "phc_PLACEHOLDER";
+const POSTHOG_TOKEN: &str = "phc_3DIgL4ES4ukoFmH4hgg3jR0e6O52PiQIfzfsVEjJu9u";
 
 const POSTHOG_BATCH_URL: &str = "https://app.posthog.com/batch/";
 
