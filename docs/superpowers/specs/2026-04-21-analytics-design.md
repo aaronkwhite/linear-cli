@@ -6,10 +6,15 @@ Add lightweight, anonymous usage analytics to lin using PostHog. Events are queu
 
 ## Decisions
 
-- **Opt-out** with first-run stderr notice
-- **Embedded write-only PostHog project token** in source (const in `src/analytics.rs`). Token is write-only by design — cannot read data. Document build-time env var as an alternative approach in a code comment for future reference.
-- **Local queue + piggybacked flush** for reliable delivery
-- **Standalone module** (`src/analytics.rs`) — no coupling to `LinearClient`
+- **Opt-out for interactive sessions, opt-in for non-interactive** (agents / CI / piped). Non-interactive first-run does not mint a UUID or queue events — opt-in requires `lin config analytics on` from a TTY, or a pre-existing install ID.
+- **First-run notice prints BEFORE any data is queued.** First interactive invocation mints the UUID and prints the notice but does not record the event itself. From the second invocation on, events are tracked normally.
+- **Embedded write-only PostHog project token** in source (const in `src/analytics.rs`). Token is write-only by design — cannot read data. Build-time env var documented as an alternative.
+- **Local queue + debounced flush.** Flush runs at most once per 10 minutes per machine (sentinel mtime). The common path skips the flush spawn entirely — no network, no 3-second wait.
+- **Atomic flush via rename-then-process.** `analytics_queue.jsonl` is renamed to `analytics_queue.flushing.<pid>.<nanos>.jsonl` before reading, eliminating the race where a concurrent writer's events get truncated. On 5xx / network failure, flushing-file contents are appended back to the queue.
+- **Queue size cap at 1000 events.** On overflow, the oldest events drop first (FIFO).
+- **HTTP status handling:** 2xx → drop events (delivered). 4xx → drop events (poison pill). 5xx / network → retain for retry.
+- **Opt-out cleanup.** `lin config analytics off` removes the queue file and install UUID. `lin config analytics on` mints a fresh UUID (does not re-correlate to the prior identity).
+- **Standalone module** (`src/analytics.rs`) — no coupling to `LinearClient`.
 
 ## What We Track
 
@@ -24,6 +29,7 @@ Single event type: `command_executed`
 | `version` | `"2026.4.16"` | lin version from Cargo |
 | `os` | `"darwin"` | `std::env::consts::OS` |
 | `arch` | `"aarch64"` | `std::env::consts::ARCH` |
+| `schema_version` | `1` | Bumped on any breaking property change |
 
 **Never collected:** API keys, issue content, workspace names, identifiers, query text, user identity.
 
@@ -45,41 +51,43 @@ pub analytics_enabled: Option<bool>, // None = enabled (opt-out default)
 
 ## Opt-Out Checks (evaluated in order)
 
-1. `DO_NOT_TRACK=1` env var — disabled
+1. `DO_NOT_TRACK` env var set to **any non-empty value** — disabled (consoledonottrack.com convention)
 2. `analytics_enabled == Some(false)` in config — disabled
-3. Otherwise — enabled
+3. First run on a non-interactive session (no TTY on stderr) and no install ID exists — disabled (don't implicitly opt in agents / CI)
+4. Otherwise — enabled
 
 ## Event Queue
 
 - File: `~/.config/lin/analytics_queue.jsonl`
 - One JSON object per line, each a complete PostHog event
-- `analytics::track()` appends a line per invocation (after opt-out check passes)
-- No size cap initially (~200 bytes/event, 10k events = ~2MB)
+- `analytics::track()` appends a line per invocation (after opt-out check passes and after the first run)
+- Capped at **1000 events**; oldest dropped on overflow
 
 ## Flush
 
-- `analytics::flush()` spawned via `tokio::spawn` on every invocation, **after** `track()` returns (no race between write and read)
-- Reads pending events from the queue file
-- POSTs to `https://app.posthog.com/capture/` using PostHog batch API
-- On success: truncates the queue file
-- On failure: events stay queued for next run
-- Uses its own reqwest client (short 5s timeout)
-- `main.rs` awaits the flush handle with a 3s timeout before exiting — worst case adds 3s on network failure
+- Debounced by `~/.config/lin/analytics_last_flush` mtime — at most once per 10 minutes per machine. Most invocations skip the flush spawn entirely (no network call, no 3s wait, fast exit).
+- When due: spawned via `tokio::spawn` and bounded by a 3-second timeout in `main.rs`.
+- **Atomic rename:** `analytics_queue.jsonl` → `analytics_queue.flushing.<pid>.<nanos>.jsonl` before reading. Concurrent writers cannot lose events to a truncate-then-write race.
+- POSTs to `https://app.posthog.com/batch/` using PostHog batch API.
+- **Status handling:** 2xx → delete flushing file (delivered). 4xx → delete (poison pill, don't retry forever). 5xx / network error → append flushing file contents back to the queue.
+- Own reqwest client with a 5-second timeout.
 
 ## First-Run Notice
 
-Printed to stderr once, when the install ID is first generated:
+Printed to stderr on the first **interactive** invocation, when the install ID is minted. The event from this invocation is not queued — the user must see the notice before any data is shipped.
 
 ```
-lin: anonymous usage stats enabled. Disable: lin config analytics off
+lin: anonymous usage stats enabled. Disable: `lin config analytics off`, or set DO_NOT_TRACK=1.
 ```
+
+In non-interactive sessions, no notice is printed and no UUID is minted; analytics stays off until the user runs `lin config analytics on` from a TTY.
 
 ## CLI Surface
 
 Added to `lin config`:
 
-- `lin config analytics off` — sets `analytics_enabled = Some(false)`, prints confirmation
-- `lin config analytics on` — sets `analytics_enabled = Some(true)`, prints confirmation
+- `lin config analytics off` — sets `analytics_enabled = Some(false)` and removes queue file + install UUID
+- `lin config analytics on` — sets `analytics_enabled = Some(true)` and resets the install UUID (mints fresh on next run)
 - `lin config analytics status` — shows enabled/disabled (notes `DO_NOT_TRACK` override), shows install ID if present
 
 All respect `--json` flag.

@@ -184,17 +184,20 @@ MCP works well for non-technical users in chat interfaces where CLI access isn't
 
 ## Analytics
 
-lin collects anonymous usage statistics to help improve the tool. This is **opt-out** — enabled by default with a first-run notice.
+lin collects anonymous usage statistics to help improve the tool. The defaults differ by context:
 
-**What's collected:** command name, flags used (not values), success/failure, execution time, lin version, OS/arch. Each install gets a random anonymous ID.
+- **Interactive sessions (terminal use):** opt-out. Enabled on the first run, after a stderr notice prints and you've seen it. The first event is not recorded — only events from the second invocation onward.
+- **Non-interactive sessions (AI agents, CI, piped):** opt-in. No data is collected unless you've previously opted in from a TTY.
 
-**What's never collected:** API keys, issue content, workspace names, identifiers, query text, or any personal information.
+**What's collected:** command name and subcommand (e.g. `issues list`), flags used (presence only — never values), success/failure, execution time, lin version, OS/arch, schema version. Each install gets a random anonymous ID.
+
+**What's never collected:** API keys, issue content, workspace names, identifiers, query text, file paths, hostname, or any personal information.
 
 **Disable:**
 
 ```bash
-lin config analytics off        # permanent
-DO_NOT_TRACK=1 lin ...          # per-invocation (community standard)
+lin config analytics off        # permanent — also deletes the local queue and install ID
+DO_NOT_TRACK=1 lin ...          # per-invocation (any non-empty value works)
 ```
 
 **Check status:**
@@ -202,6 +205,8 @@ DO_NOT_TRACK=1 lin ...          # per-invocation (community standard)
 ```bash
 lin config analytics status
 ```
+
+Re-enabling with `lin config analytics on` mints a fresh anonymous ID — the prior identity is not preserved.
 
 ## Development
 
