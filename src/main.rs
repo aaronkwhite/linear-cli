@@ -82,15 +82,18 @@ async fn main() {
     }
 
     analytics::track(&analytics::Event {
-        command: analytics::command_name(&cli.command).to_string(),
+        command: analytics::command_name(&cli.command),
         flags,
         success,
-        duration_ms: duration.as_millis() as u64,
+        duration_ms: duration.as_millis().min(u64::MAX as u128) as u64,
     });
 
-    // Flush analytics queue in background, wait up to 3s
-    let flush_handle = tokio::spawn(analytics::flush());
-    let _ = tokio::time::timeout(std::time::Duration::from_secs(3), flush_handle).await;
+    // Most invocations skip the flush entirely — see analytics::flush_due.
+    // This keeps the common path fast: no spawn, no network, no 3s wait.
+    if analytics::flush_due() {
+        let flush_handle = tokio::spawn(analytics::flush());
+        let _ = tokio::time::timeout(std::time::Duration::from_secs(3), flush_handle).await;
+    }
 
     if result.is_err() {
         std::process::exit(1);

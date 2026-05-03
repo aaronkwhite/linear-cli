@@ -129,6 +129,9 @@ fn analytics_cmd(cmd: &AnalyticsCommand, json: bool) -> anyhow::Result<()> {
     match cmd {
         AnalyticsCommand::Off => {
             crate::config::set_analytics_enabled(false)?;
+            // Clean break: remove any queued events and the install UUID so opting
+            // out leaves no residual data on disk.
+            crate::analytics::purge_artifacts();
             if json {
                 crate::output::print_json(&serde_json::json!({ "analytics": false }));
             } else {
@@ -137,6 +140,9 @@ fn analytics_cmd(cmd: &AnalyticsCommand, json: bool) -> anyhow::Result<()> {
         }
         AnalyticsCommand::On => {
             crate::config::set_analytics_enabled(true)?;
+            // Mint a fresh UUID on the next run instead of re-correlating with
+            // the prior identity from before opt-out.
+            crate::analytics::reset_install_id();
             if json {
                 crate::output::print_json(&serde_json::json!({ "analytics": true }));
             } else {
@@ -145,7 +151,9 @@ fn analytics_cmd(cmd: &AnalyticsCommand, json: bool) -> anyhow::Result<()> {
         }
         AnalyticsCommand::Status => {
             let enabled = crate::analytics::is_enabled();
-            let do_not_track = std::env::var("DO_NOT_TRACK").ok().as_deref() == Some("1");
+            let do_not_track = std::env::var("DO_NOT_TRACK")
+                .ok()
+                .is_some_and(|v| !v.is_empty());
             let config_value = crate::config::load().ok().and_then(|c| c.analytics_enabled);
             let install_id_path = crate::config::config_dir().map(|d| d.join("analytics_id"));
             let install_id = install_id_path
@@ -165,7 +173,7 @@ fn analytics_cmd(cmd: &AnalyticsCommand, json: bool) -> anyhow::Result<()> {
                 println!("Analytics: {}", style(status).bold());
                 if do_not_track {
                     println!(
-                        "  {} DO_NOT_TRACK=1 is set (overrides config)",
+                        "  {} DO_NOT_TRACK is set (overrides config)",
                         style("!").yellow().bold()
                     );
                 }
