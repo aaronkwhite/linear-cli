@@ -4,6 +4,27 @@ All notable changes to linear-cli will be documented in this file.
 
 Versioning follows [CalVer](https://calver.org/) with format `YYYY.MM.PATCH`.
 
+## [2026.5.4] — 2026-05-04
+
+### Changed
+- Analytics opt-in policy now differs by context: opt-out for interactive TTY sessions, opt-in for non-interactive sessions (agents, CI, piped). Non-interactive first-run no longer mints an install ID or queues events.
+- First-run notice prints to stderr **before** any data is queued; the first interactive invocation mints the UUID but does not record its own event.
+- Flush is debounced via a sentinel mtime — at most once per 10 minutes per machine. Most invocations skip the flush spawn entirely (no network call, no 3-second wait).
+- Flush is now race-free: the queue file is renamed to `analytics_queue.flushing.<pid>.<nanos>.jsonl` before reading, eliminating the truncate-then-write race with concurrent writers.
+- HTTP status handling: 2xx → drop events (delivered), 4xx → drop (poison pill), 5xx / network → retain for retry.
+- Local queue capped at 1000 events; oldest dropped first on overflow.
+- `DO_NOT_TRACK` now honors any non-empty value (per consoledonottrack.com convention) instead of the literal string `"1"`.
+- `lin config analytics off` now also removes the queue file and install UUID. `lin config analytics on` mints a fresh UUID rather than re-correlating with the prior identity.
+
+### Security
+- Bumped `rustls-webpki` to 0.103.13 to patch RUSTSEC-2026-0104 (reachable panic in CRL parsing). Transitive only — `lin` does not invoke CRL parsing.
+
+## [2026.4.21] — 2026-04-21
+
+### Added
+- Anonymous usage analytics via PostHog. Captures command name, flag presence, success, and execution time only — never API keys, identifiers, query text, or workspace content.
+- `lin config analytics on/off/status` to manage opt-in state and inspect the install ID.
+
 ## [2026.4.16] — 2026-04-14
 
 ### Added
