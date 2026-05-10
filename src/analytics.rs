@@ -111,6 +111,7 @@ fn track_to_dir(dir: &Path, event: &Event, interactive: bool) -> bool {
         "event": "command_executed",
         "distinct_id": install_id,
         "properties": {
+            "app": "lin",
             "command": event.command,
             "flags": event.flags,
             "success": event.success,
@@ -677,6 +678,7 @@ mod tests {
         let queue = fs::read_to_string(dir.join(QUEUE_FILE)).unwrap();
         let parsed: serde_json::Value = serde_json::from_str(queue.trim()).unwrap();
         assert_eq!(parsed["event"], "command_executed");
+        assert_eq!(parsed["properties"]["app"], "lin");
         assert_eq!(parsed["properties"]["command"], "issues list");
         assert_eq!(parsed["properties"]["schema_version"], 1);
 

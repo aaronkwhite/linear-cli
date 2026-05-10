@@ -4,6 +4,13 @@ All notable changes to linear-cli will be documented in this file.
 
 Versioning follows [CalVer](https://calver.org/) with format `YYYY.MM.PATCH`.
 
+## [2026.5.5] — 2026-05-10
+
+Peer CLIs (`bosshogg`, etc.) write `command_executed` events to the same PostHog project, so dashboards filtering only on the event name commingle data across tools. This release tags every lin event with a literal `app: "lin"` property so dashboards can partition cleanly. Severity: LOW — additive only, no existing properties changed, no event renamed, no identifier scheme touched.
+
+### Changed
+- Analytics events now include an `app: "lin"` property to disambiguate from peer CLIs that share the same PostHog project.
+
 ## [2026.5.4] — 2026-05-04
 
 ### Changed

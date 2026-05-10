@@ -1,6 +1,6 @@
 [package]
 name = "lincli"
-version = "2026.5.4"
+version = "2026.5.5"
 edition = "2024"
 description = "Fast, agent-friendly Linear CLI — manage issues, projects, cycles from the terminal"
 license = "MIT"
