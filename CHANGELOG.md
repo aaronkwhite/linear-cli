@@ -4,6 +4,20 @@ All notable changes to linear-cli will be documented in this file.
 
 Versioning follows [CalVer](https://calver.org/) with format `YYYY.MM.PATCH`.
 
+## [Unreleased]
+
+The weekly Security Audit workflow had been failing since 2026-07-19 without running its audit, so five advisories accumulated undetected. The workflow is fixed and all five are cleared. Severity: LOW — one advisory was reachable in principle and rated low by upstream; the rest were unreachable, dev-only, or lockfile-only.
+
+### Fixed
+- Security Audit workflow now builds `cargo-audit` with the latest stable toolchain. `rustsec/audit-check` installs the tool unlocked, so it resolved `kstring 2.0.4`, which requires rustc 1.96 — the job's pinned 1.94 channel could not compile it, and the audit had not actually run for seven consecutive weeks. `RUSTUP_TOOLCHAIN` now overrides `rust-toolchain.toml` for that job only; the crate's pinned channel is unchanged everywhere else.
+
+### Security
+- Bumped `crossbeam-epoch` to 0.9.20 to patch RUSTSEC-2026-0204 (invalid pointer dereference in the `fmt::Pointer` impl for `Atomic`/`Shared`). Transitive via `termimad` — `lin` never formats those types.
+- Bumped `h2` to 0.4.19 to patch RUSTSEC-2026-0258 (unbounded queueing of empty DATA frames). Transitive via `reqwest`/`hyper` and on the live HTTP path; rated low severity upstream.
+- Bumped `quinn-proto` to 0.11.17 to patch RUSTSEC-2026-0185 (remote memory exhaustion in out-of-order stream reassembly). Present in `Cargo.lock` only — `reqwest` is built with `default-features = false`, so no QUIC/HTTP-3 code is in the build graph on any target.
+- Bumped `anyhow` to 1.0.104 to clear RUSTSEC-2026-0190 (unsoundness in `Error::downcast_mut()`). `lin` does not call `downcast_mut`.
+- Moved the `serial_test` dev-dependency from 3 to 4, dropping `scc` from the tree entirely and clearing RUSTSEC-2026-0205 (exception-safety flaw in `Array::insert`). Dev-only — `scc` never shipped in the binary.
+
 ## [2026.5.5] — 2026-05-10
 
 Peer CLIs (`bosshogg`, etc.) write `command_executed` events to the same PostHog project, so dashboards filtering only on the event name commingle data across tools. This release tags every lin event with a literal `app: "lin"` property so dashboards can partition cleanly. Severity: LOW — additive only, no existing properties changed, no event renamed, no identifier scheme touched.
