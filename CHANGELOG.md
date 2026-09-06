@@ -4,12 +4,13 @@ All notable changes to linear-cli will be documented in this file.
 
 Versioning follows [CalVer](https://calver.org/) with format `YYYY.MM.PATCH`.
 
-## [Unreleased]
+## [2026.9.0] — 2026-09-06
 
 The weekly Security Audit workflow had been failing since 2026-07-19 without running its audit, so five advisories accumulated undetected. The workflow is fixed and all five are cleared. Severity: LOW — one advisory was reachable in principle and rated low by upstream; the rest were unreachable, dev-only, or lockfile-only.
 
 ### Fixed
 - Security Audit workflow now builds `cargo-audit` with the latest stable toolchain. `rustsec/audit-check` installs the tool unlocked, so it resolved `kstring 2.0.4`, which requires rustc 1.96 — the job's pinned 1.94 channel could not compile it, and the audit had not actually run for seven consecutive weeks. `RUSTUP_TOOLCHAIN` now overrides `rust-toolchain.toml` for that job only; the crate's pinned channel is unchanged everywhere else.
+- Security Audit now runs on every pull request, with no path filter. It is a required status check on `main`, and a required check that is skipped never reports its status — so any PR that did not touch `Cargo.toml` or `Cargo.lock` was left permanently unmergeable. The `push` trigger keeps its path filter.
 
 ### Security
 - Bumped `crossbeam-epoch` to 0.9.20 to patch RUSTSEC-2026-0204 (invalid pointer dereference in the `fmt::Pointer` impl for `Atomic`/`Shared`). Transitive via `termimad` — `lin` never formats those types.
